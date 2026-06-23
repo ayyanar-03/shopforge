@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-security] - 2026-06-23
+
+### Added
+
+- **RBAC:** Role enum (buyer, seller, admin) with `@Roles()` decorator and `RolesGuard`
+- User entity gains `role` column (default: buyer), JWT payload includes role claim
+- **Refresh token rotation:** `refresh_tokens` table with reuse detection — presenting a revoked token invalidates all tokens for that user
+- `POST /auth/refresh` and `POST /auth/logout` endpoints
+- **Rate limiting:** `@nestjs/throttler` globally (60 req/min) with tighter limits on auth endpoints (signup: 5/min, login: 10/min, refresh: 10/min)
+- Integration tests (e2e) covering signup, login, refresh token rotation, RBAC enforcement on product CRUD, and DTO validation across all endpoints
+- ADR-001: Authentication and authorization strategy decision record
+
+### Changed
+
+- Product write endpoints (`POST`, `PUT`) restricted to seller and admin roles
+- Product delete restricted to admin only
+- Access token TTL reduced from 7 days to 15 minutes
+- Signup DTO accepts optional `role` field with enum validation
+
+### Security
+
+- Refresh token rotation prevents token replay attacks
+- Reuse detection revokes all user tokens on suspected theft
+- Rate limiting on auth endpoints slows credential-stuffing attacks
+- `ValidationPipe` with `whitelist: true` strips unknown fields on all endpoints
+
 ## [0.2.0-mvp] - 2026-06-23
 
 ### Added
