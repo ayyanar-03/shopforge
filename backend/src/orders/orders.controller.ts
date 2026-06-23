@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
@@ -13,8 +14,8 @@ export class OrdersController {
   }
 
   @Get()
-  getOrders(@Request() req: any) {
-    return this.ordersService.getOrders(req.user.id);
+  getOrders(@Request() req: any, @Query() pagination: PaginationDto) {
+    return this.ordersService.getOrders(req.user.id, pagination.page!, pagination.limit!);
   }
 
   @Get(':id')

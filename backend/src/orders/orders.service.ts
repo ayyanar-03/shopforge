@@ -61,8 +61,8 @@ export class OrdersService {
     return order;
   }
 
-  async getOrders(userId: number) {
-    return this.orderRepo.findByUserId(userId);
+  async getOrders(userId: number, page: number, limit: number) {
+    return this.orderRepo.findByUserId(userId, page, limit);
   }
 
   async getOrder(id: number) {
