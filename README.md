@@ -2,62 +2,137 @@
 
 A full-stack e-commerce platform built with NestJS and React.
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Client["Client (Browser)"]
+        React["React SPA<br/>Vite + TypeScript<br/>:5173"]
+        AuthCtx["AuthContext<br/>JWT in localStorage"]
+        AxiosClient["Axios HTTP Client<br/>Bearer token interceptor"]
+        React --> AuthCtx
+        React --> AxiosClient
+    end
+
+    subgraph Server["NestJS Monolith (:3000)"]
+        direction TB
+        CORS["CORS Middleware"]
+        ValidationPipe["ValidationPipe<br/>whitelist + transform"]
+        CORS --> ValidationPipe
+
+        subgraph Modules["Domain Modules"]
+            direction LR
+            AuthMod["Auth<br/>JWT Strategy<br/>Passport Guard"]
+            UserMod["Users<br/>signup · login"]
+            ProductMod["Products<br/>CRUD"]
+            CartMod["Cart<br/>add · remove · clear"]
+            OrderMod["Orders<br/>place · list · detail"]
+        end
+
+        ValidationPipe --> Modules
+
+        subgraph RepoLayer["Repository Layer"]
+            direction LR
+            IRepos["Interfaces<br/>IUserRepository<br/>IProductRepository<br/>ICartRepository<br/>IOrderRepository"]
+            TypeORMRepos["TypeORM Implementations"]
+            IRepos -. "DI" .-> TypeORMRepos
+        end
+
+        Modules --> RepoLayer
+    end
+
+    subgraph Infra["Infrastructure (Docker Compose)"]
+        MySQL[("MySQL 8.0<br/>:3307 → :3306")]
+        Redis[("Redis 7<br/>:6379")]
+    end
+
+    AxiosClient -->|"REST / JSON"| CORS
+    TypeORMRepos --> MySQL
+    Server -. "planned" .-> Redis
+```
+
+### Data Flow
+
+1. **Authentication:** Client sends credentials to `/auth/signup` or `/auth/login`, receives a JWT token stored in localStorage.
+2. **Products:** Public CRUD endpoints at `/products`. No auth required for read operations.
+3. **Cart:** Authenticated users manage cart items via `/cart`. Items reference products with eager-loaded relations.
+4. **Orders:** `POST /orders` validates stock, creates an order from the current cart, decrements product stock, and clears the cart atomically.
+
+### Repository Pattern
+
+Each domain module defines a repository interface (e.g., `IProductRepository`) separate from its TypeORM implementation. Services depend on the interface via NestJS dependency injection (`@Inject` + token), making the data layer swappable without changing business logic.
+
 ## Tech Stack
 
-- **Backend:** NestJS (TypeScript), TypeORM
-- **Frontend:** React (TypeScript) + Vite
-- **Database:** MySQL 8.0
-- **Cache:** Redis 7
-- **Auth:** JWT (passport-jwt)
+| Layer          | Technology                          |
+|----------------|-------------------------------------|
+| Frontend       | React 19, TypeScript, Vite 8        |
+| Backend        | NestJS 11, TypeScript, TypeORM      |
+| Auth           | JWT via passport-jwt, bcrypt        |
+| Database       | MySQL 8.0                           |
+| Cache          | Redis 7 (provisioned, not yet used) |
+| Containerization | Docker Compose                    |
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js >= 18
-- Docker & Docker Compose
+- Docker & Docker Compose (or locally installed MySQL and Redis)
 - npm
 
-### Setup
+### 1. Clone the repository
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ayyanar-03/shopforge.git
-   cd shopforge
-   ```
+```bash
+git clone https://github.com/ayyanar-03/shopforge.git
+cd shopforge
+```
 
-2. Start MySQL and Redis:
-   ```bash
-   docker-compose up -d
-   ```
+### 2. Start infrastructure
 
-3. Install and run the backend:
-   ```bash
-   cd backend
-   npm install
-   npm run start:dev
-   ```
-   The API runs at `http://localhost:3000`.
+**Option A — Docker (recommended):**
 
-4. Install and run the frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   The app runs at `http://localhost:5173`.
+```bash
+docker-compose up -d
+```
 
-### Environment Variables (backend)
+This starts MySQL on port **3307** and Redis on port **6379**.
 
-| Variable      | Default            | Description         |
-|---------------|--------------------|---------------------|
-| `DB_HOST`     | `localhost`        | MySQL host          |
-| `DB_PORT`     | `3306`             | MySQL port          |
-| `DB_USER`     | `shopforge_user`   | MySQL username      |
-| `DB_PASSWORD` | `shopforge_pass`   | MySQL password      |
-| `DB_NAME`     | `shopforge`        | MySQL database name |
-| `JWT_SECRET`  | `shopforge-dev-secret` | JWT signing key |
-| `PORT`        | `3000`             | API server port     |
+**Option B — Local services:**
+
+If Docker is unavailable, install MySQL and Redis locally. Ensure MySQL is running on port 3307 (or update `DB_PORT` in your environment).
+
+### 3. Install and run the backend
+
+```bash
+cd backend
+npm install
+npm run start:dev
+```
+
+The API starts at `http://localhost:3000`. TypeORM `synchronize: true` auto-creates tables on first run.
+
+### 4. Install and run the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app starts at `http://localhost:5173`.
+
+### Environment Variables
+
+| Variable      | Default              | Description         |
+|---------------|----------------------|---------------------|
+| `DB_HOST`     | `localhost`          | MySQL host          |
+| `DB_PORT`     | `3307`               | MySQL port          |
+| `DB_USER`     | `shopforge_user`     | MySQL username      |
+| `DB_PASSWORD` | `shopforge_pass`     | MySQL password      |
+| `DB_NAME`     | `shopforge`          | MySQL database name |
+| `JWT_SECRET`  | `shopforge-dev-secret` | JWT signing key   |
+| `PORT`        | `3000`               | API server port     |
 
 ### Running Tests
 
@@ -65,56 +140,6 @@ A full-stack e-commerce platform built with NestJS and React.
 cd backend
 npm test
 ```
-
-## Architecture
-
-```mermaid
-graph TB
-    subgraph Frontend
-        React[React SPA<br/>Vite + TypeScript]
-    end
-
-    subgraph Backend
-        NestJS[NestJS API Server]
-        AuthModule[Auth Module<br/>JWT + Passport]
-        UserModule[User Module]
-        ProductModule[Product Module]
-        CartModule[Cart Module]
-        OrderModule[Order Module]
-
-        NestJS --> AuthModule
-        NestJS --> UserModule
-        NestJS --> ProductModule
-        NestJS --> CartModule
-        NestJS --> OrderModule
-    end
-
-    subgraph Data Layer
-        RepoInterfaces[Repository Interfaces]
-        TypeORMImpl[TypeORM Implementations]
-        RepoInterfaces --> TypeORMImpl
-    end
-
-    subgraph Infrastructure
-        MySQL[(MySQL 8.0)]
-        Redis[(Redis 7)]
-    end
-
-    React -->|HTTP / REST| NestJS
-    TypeORMImpl --> MySQL
-    NestJS -.->|Future| Redis
-```
-
-### Data Flow
-
-1. **Authentication:** Client sends credentials to `/auth/signup` or `/auth/login`, receives a JWT token.
-2. **Products:** Public CRUD endpoints at `/products`. No auth required for read operations.
-3. **Cart:** Authenticated users manage cart items via `/cart`. Items reference products.
-4. **Orders:** `POST /orders` creates an order from the current cart, decrements product stock, and clears the cart.
-
-### Repository Pattern
-
-Each domain module defines a repository interface (e.g., `IProductRepository`) separate from its TypeORM implementation. Services depend on the interface via dependency injection, making the data layer swappable without changing business logic.
 
 ## API Endpoints
 
