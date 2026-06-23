@@ -1,10 +1,14 @@
 import { Injectable, ConflictException, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { USER_REPOSITORY } from './repositories/user.repository.interface';
 import type { IUserRepository } from './repositories/user.repository.interface';
+import { RefreshToken } from '../auth/entities/refresh-token.entity';
 
 @Injectable()
 export class UsersService {
@@ -12,7 +16,26 @@ export class UsersService {
     @Inject(USER_REPOSITORY)
     private readonly userRepo: IUserRepository,
     private readonly jwtService: JwtService,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepo: Repository<RefreshToken>,
   ) {}
+
+  private generateAccessToken(user: { id: number; email: string; role: string }) {
+    return this.jwtService.sign(
+      { sub: user.id, email: user.email, role: user.role },
+      { expiresIn: '15m' },
+    );
+  }
+
+  private async generateRefreshToken(userId: number): Promise<string> {
+    const token = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const refreshToken = this.refreshTokenRepo.create({ token, userId, expiresAt });
+    await this.refreshTokenRepo.save(refreshToken);
+    return token;
+  }
 
   async signup(dto: SignupDto) {
     const existing = await this.userRepo.findByEmail(dto.email);
@@ -25,10 +48,16 @@ export class UsersService {
       name: dto.name,
       email: dto.email,
       password: hashedPassword,
+      role: dto.role,
     });
 
-    const token = this.jwtService.sign({ sub: user.id, email: user.email });
-    return { user: { id: user.id, name: user.name, email: user.email }, token };
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = await this.generateRefreshToken(user.id);
+    return {
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      accessToken,
+      refreshToken,
+    };
   }
 
   async login(dto: LoginDto) {
@@ -42,7 +71,43 @@ export class UsersService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = this.jwtService.sign({ sub: user.id, email: user.email });
-    return { user: { id: user.id, name: user.name, email: user.email }, token };
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = await this.generateRefreshToken(user.id);
+    return {
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async refresh(token: string) {
+    const stored = await this.refreshTokenRepo.findOne({
+      where: { token, revoked: false },
+      relations: { user: true },
+    });
+
+    if (!stored || stored.expiresAt < new Date()) {
+      if (stored) {
+        // Possible token reuse — revoke all tokens for this user
+        await this.refreshTokenRepo.update({ userId: stored.userId }, { revoked: true });
+      }
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Rotate: revoke old token, issue new pair
+    stored.revoked = true;
+    await this.refreshTokenRepo.save(stored);
+
+    const accessToken = this.generateAccessToken(stored.user);
+    const refreshToken = await this.generateRefreshToken(stored.userId);
+    return { accessToken, refreshToken };
+  }
+
+  async logout(token: string) {
+    await this.refreshTokenRepo.update({ token }, { revoked: true });
+  }
+
+  async cleanupExpiredTokens() {
+    await this.refreshTokenRepo.delete({ expiresAt: LessThan(new Date()) });
   }
 }
