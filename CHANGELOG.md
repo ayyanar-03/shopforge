@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-06-23
+## [0.2.0-mvp] - 2026-06-23
 
 ### Added
 
@@ -17,13 +17,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Order module:** place order from cart with stock decrement
 - Repository pattern with interfaces separated from TypeORM implementations
 - Unit tests for Order service (8 test cases)
-- React frontend pages: signup, login, product listing, product detail, cart, checkout
+- React frontend pages: signup, login, product listing, product detail, cart, orders
 - Auth context with localStorage persistence
 - Axios API client with JWT interceptor
 - Navbar with conditional auth-aware navigation
-- Architecture diagram (Mermaid) in README
-- API endpoint documentation in README
-- Environment variable reference in README
+
+### Changed
+
+- Docker Compose MySQL port mapped to 3307 to avoid conflicts with local MySQL
+- Backend default `DB_PORT` updated to 3307
+- README rewritten with detailed Mermaid architecture diagram showing monolith structure
+- Setup instructions updated with Docker and local-service alternatives
+
+### Fixed
+
+- TypeScript `import type` errors for repository interfaces in decorated signatures
+- TypeORM `relations` syntax updated from string arrays to object notation
 
 ## [0.1.0] - 2026-06-23
 
