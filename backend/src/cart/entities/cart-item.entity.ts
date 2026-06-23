@@ -1,8 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Product } from '../../products/entities/product.entity';
 
 @Entity('cart_items')
+@Index('IDX_cart_user', ['userId'])
+@Index('IDX_cart_user_product', ['userId', 'productId'], { unique: true })
 export class CartItem {
   @PrimaryGeneratedColumn()
   id: number;

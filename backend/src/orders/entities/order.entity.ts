@@ -6,6 +6,7 @@ import {
   OneToMany,
   JoinColumn,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { OrderItem } from './order-item.entity';
@@ -17,6 +18,8 @@ export enum OrderStatus {
 }
 
 @Entity('orders')
+@Index('IDX_order_user', ['userId'])
+@Index('IDX_order_user_created', ['userId', 'createdAt'])
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
