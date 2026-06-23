@@ -12,7 +12,7 @@ export class TypeOrmCartRepository implements ICartRepository {
   ) {}
 
   async findByUserId(userId: number): Promise<CartItem[]> {
-    return this.repo.find({ where: { userId }, relations: ['product'] });
+    return this.repo.find({ where: { userId }, relations: { product: true } });
   }
 
   async findItem(userId: number, productId: number): Promise<CartItem | null> {

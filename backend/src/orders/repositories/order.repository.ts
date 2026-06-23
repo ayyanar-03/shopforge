@@ -17,10 +17,10 @@ export class TypeOrmOrderRepository implements IOrderRepository {
   }
 
   async findByUserId(userId: number): Promise<Order[]> {
-    return this.repo.find({ where: { userId }, relations: ['items', 'items.product'], order: { createdAt: 'DESC' } });
+    return this.repo.find({ where: { userId }, relations: { items: { product: true } }, order: { createdAt: 'DESC' } });
   }
 
   async findById(id: number): Promise<Order | null> {
-    return this.repo.findOne({ where: { id }, relations: ['items', 'items.product'] });
+    return this.repo.findOne({ where: { id }, relations: { items: { product: true } } });
   }
 }

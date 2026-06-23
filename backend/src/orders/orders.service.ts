@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
-import { ORDER_REPOSITORY, IOrderRepository } from './repositories/order.repository.interface';
-import { CART_REPOSITORY, ICartRepository } from '../cart/repositories/cart.repository.interface';
-import {
-  PRODUCT_REPOSITORY,
-  IProductRepository,
-} from '../products/repositories/product.repository.interface';
+import { ORDER_REPOSITORY } from './repositories/order.repository.interface';
+import type { IOrderRepository } from './repositories/order.repository.interface';
+import { CART_REPOSITORY } from '../cart/repositories/cart.repository.interface';
+import type { ICartRepository } from '../cart/repositories/cart.repository.interface';
+import { PRODUCT_REPOSITORY } from '../products/repositories/product.repository.interface';
+import type { IProductRepository } from '../products/repositories/product.repository.interface';
 import { OrderStatus } from './entities/order.entity';
 
 @Injectable()
