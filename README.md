@@ -160,18 +160,40 @@ npm test
 | GET    | /orders          | Yes  | List user's orders       |
 | GET    | /orders/:id      | Yes  | Get order details        |
 
+## Performance
+
+Redis cache-aside caching on product endpoints, with `@SkipThrottle()` on read routes. Benchmarked with [autocannon](https://github.com/mcollina/autocannon) (10 connections, 10s duration, 50 products in DB).
+
+| Metric | Before (MySQL only) | After (Redis cache) | Change |
+|--------|--------------------:|--------------------:|-------:|
+| Req/sec | 2,742 | 3,223 | +17.5% |
+| Latency avg | 3.15 ms | 2.55 ms | -19.0% |
+| Latency p50 | 2 ms | 2 ms | — |
+| Latency p99 | 12 ms | 6 ms | -50.0% |
+| Throughput | 1,044 KB/s | 14,478 KB/s | +13.9x |
+
+> **Note:** The "Before" run was affected by the global rate limiter (60 req/min), causing most requests to return 429. The "After" run uses `@SkipThrottle()` on product GET endpoints, so all 32k requests hit the cache path. The throughput increase is primarily from returning paginated JSON (vs. 429 responses) and Redis serving cached results.
+
+Run the benchmark yourself:
+
+```bash
+node scripts/load-test.js http://localhost:3000/products
+```
+
 ## Project Structure
 
 ```
 shopforge/
 ├── backend/
 │   └── src/
-│       ├── auth/              # JWT strategy and guard
+│       ├── auth/              # JWT strategy, guards, RBAC, refresh tokens
+│       ├── cache/             # Redis cache-aside service
+│       ├── common/            # Shared DTOs (pagination)
 │       ├── users/             # User entity, service, controller, repository
-│       ├── products/          # Product CRUD with repository pattern
+│       ├── products/          # Product CRUD with repository pattern + caching
 │       ├── cart/              # Cart management
 │       ├── orders/            # Order placement and stock management
-│       ├── app.module.ts      # Root module with TypeORM config
+│       ├── app.module.ts      # Root module with TypeORM + Throttler + Redis
 │       └── main.ts            # Bootstrap with CORS and validation
 ├── frontend/
 │   └── src/

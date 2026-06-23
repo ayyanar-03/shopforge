@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
-import { IProductRepository } from './product.repository.interface';
+import { IProductRepository, PaginatedResult } from './product.repository.interface';
 
 @Injectable()
 export class TypeOrmProductRepository implements IProductRepository {
@@ -11,8 +11,13 @@ export class TypeOrmProductRepository implements IProductRepository {
     private readonly repo: Repository<Product>,
   ) {}
 
-  async findAll(): Promise<Product[]> {
-    return this.repo.find();
+  async findAll(page: number, limit: number): Promise<PaginatedResult<Product>> {
+    const [data, total] = await this.repo.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findById(id: number): Promise<Product | null> {

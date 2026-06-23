@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
+import { RedisCacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { OrdersModule } from './orders/orders.module';
       synchronize: true,
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    RedisCacheModule,
     UsersModule,
     ProductsModule,
     CartModule,

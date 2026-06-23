@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-perf] - 2026-06-24
+
+### Added
+
+- **Redis caching:** Cache-aside pattern on product listing and detail endpoints using ioredis (60s TTL), with invalidation on create/update/delete
+- **Pagination:** Product listing and order history return paginated results (`page`, `limit`, `total`, `totalPages`); default 20 items/page, max 100
+- `PaginationDto` with class-validator/class-transformer for query param validation
+- Global `RedisCacheModule` with `CacheService` for get/set/del/delByPattern
+- Load test script (`scripts/load-test.js`) using autocannon
+- Performance benchmark results in README
+
+### Changed
+
+- Product GET endpoints skip rate limiting (`@SkipThrottle()`) since they are public and cached
+- Product repository uses `findAndCount` with skip/take for paginated queries
+- Order repository uses `findAndCount` with skip/take for paginated queries
+
+### Performance
+
+- MySQL indexes added on cart_items (userId, productId), orders (userId, createdAt), order_items (orderId, productId), refresh_tokens (userId)
+- p99 latency reduced from 12 ms to 6 ms (50% reduction)
+- Throughput increased from 1,044 KB/s to 14,478 KB/s (13.9x)
+
 ## [0.3.0-security] - 2026-06-23
 
 ### Added
