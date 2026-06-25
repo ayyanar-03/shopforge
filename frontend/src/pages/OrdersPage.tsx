@@ -22,7 +22,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     api.get('/orders').then(({ data }) => {
-      setOrders(data);
+      setOrders(Array.isArray(data) ? data : data.data ?? []);
       setLoading(false);
     });
   }, []);
