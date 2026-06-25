@@ -53,7 +53,8 @@ export class OrdersService {
       userId,
       total,
       status: OrderStatus.CONFIRMED,
-      items: orderItems as any,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      items: orderItems as any, // partial shape passed; entity relations are created by the repo
     });
 
     await this.cartRepo.clearCart(userId);

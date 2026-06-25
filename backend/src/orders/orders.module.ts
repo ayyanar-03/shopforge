@@ -12,9 +12,6 @@ import { ProductsModule } from '../products/products.module';
 @Module({
   imports: [TypeOrmModule.forFeature([Order, OrderItem]), CartModule, ProductsModule],
   controllers: [OrdersController],
-  providers: [
-    OrdersService,
-    { provide: ORDER_REPOSITORY, useClass: TypeOrmOrderRepository },
-  ],
+  providers: [OrdersService, { provide: ORDER_REPOSITORY, useClass: TypeOrmOrderRepository }],
 })
 export class OrdersModule {}

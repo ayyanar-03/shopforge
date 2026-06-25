@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface User {
   id: number;
@@ -9,7 +9,6 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  isLoading: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
 }
@@ -17,19 +16,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('user');
+      return saved ? (JSON.parse(saved) as User) : null;
+    } catch {
+      return null;
     }
-    setIsLoading(false);
-  }, []);
+  });
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
 
   const login = (user: User, token: string) => {
     setUser(user);
@@ -46,10 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, token, login, logout }}>{children}</AuthContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

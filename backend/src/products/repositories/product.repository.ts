@@ -41,7 +41,10 @@ export class TypeOrmProductRepository implements IProductRepository {
 
     const trimmed = q?.trim() ?? '';
     if (trimmed.length >= 3) {
-      const boolQ = trimmed.split(/\s+/).map((w) => `+${w}*`).join(' ');
+      const boolQ = trimmed
+        .split(/\s+/)
+        .map((w) => `+${w}*`)
+        .join(' ');
       qb.where('MATCH(p.name, p.description) AGAINST (:boolQ IN BOOLEAN MODE)', { boolQ });
     } else if (trimmed.length > 0) {
       qb.where('(p.name LIKE :like OR p.description LIKE :like)', { like: `%${trimmed}%` });

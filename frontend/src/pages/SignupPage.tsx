@@ -1,5 +1,5 @@
-import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,30 +9,30 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, user, isLoading } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isLoading && user) navigate('/products', { replace: true });
-  }, [user, isLoading, navigate]);
+  if (user) return <Navigate to="/products" replace />;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
     try {
-      const { data } = await api.post('/auth/signup', { name, email, password });
+      const { data } = await api.post<{
+        user: { id: number; name: string; email: string };
+        accessToken: string;
+      }>('/auth/signup', { name, email, password });
       login(data.user, data.accessToken);
       navigate('/products');
-    } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : msg || 'Signup failed');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
+        ?.message;
+      setError(Array.isArray(msg) ? msg[0] : (msg ?? 'Signup failed'));
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoading) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">

@@ -15,15 +15,24 @@ export default function Navbar() {
       <Link to="/" className="text-xl font-bold text-blue-600 no-underline">
         ShopForge
       </Link>
-      <Link to="/products" className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline">
+      <Link
+        to="/products"
+        className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline"
+      >
         Products
       </Link>
       {user ? (
         <>
-          <Link to="/cart" className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline">
+          <Link
+            to="/cart"
+            className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline"
+          >
             Cart
           </Link>
-          <Link to="/orders" className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline">
+          <Link
+            to="/orders"
+            className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline"
+          >
             Orders
           </Link>
           <div className="ml-auto flex items-center gap-4">
@@ -38,7 +47,10 @@ export default function Navbar() {
         </>
       ) : (
         <div className="ml-auto flex items-center gap-3">
-          <Link to="/login" className="text-sm text-gray-600 hover:text-blue-600 font-medium no-underline">
+          <Link
+            to="/login"
+            className="text-sm text-gray-600 hover:text-blue-600 font-medium no-underline"
+          >
             Login
           </Link>
           <Link
