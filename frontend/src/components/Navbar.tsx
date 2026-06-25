@@ -11,20 +11,42 @@ export default function Navbar() {
   };
 
   return (
-    <nav style={{ display: 'flex', gap: '1rem', padding: '1rem', borderBottom: '1px solid #ddd', alignItems: 'center' }}>
-      <Link to="/" style={{ fontWeight: 'bold', fontSize: '1.2rem', textDecoration: 'none' }}>ShopForge</Link>
-      <Link to="/products">Products</Link>
+    <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-6 shadow-sm">
+      <Link to="/" className="text-xl font-bold text-blue-600 no-underline">
+        ShopForge
+      </Link>
+      <Link to="/products" className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline">
+        Products
+      </Link>
       {user ? (
         <>
-          <Link to="/cart">Cart</Link>
-          <Link to="/orders">Orders</Link>
-          <span style={{ marginLeft: 'auto' }}>{user.name}</span>
-          <button onClick={handleLogout}>Logout</button>
+          <Link to="/cart" className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline">
+            Cart
+          </Link>
+          <Link to="/orders" className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline">
+            Orders
+          </Link>
+          <div className="ml-auto flex items-center gap-4">
+            <span className="text-sm text-gray-700 font-medium">{user.name}</span>
+            <button
+              onClick={handleLogout}
+              className="text-sm px-3 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer"
+            >
+              Logout
+            </button>
+          </div>
         </>
       ) : (
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-          <Link to="/login">Login</Link>
-          <Link to="/signup">Sign Up</Link>
+        <div className="ml-auto flex items-center gap-3">
+          <Link to="/login" className="text-sm text-gray-600 hover:text-blue-600 font-medium no-underline">
+            Login
+          </Link>
+          <Link
+            to="/signup"
+            className="text-sm px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-underline"
+          >
+            Sign Up
+          </Link>
         </div>
       )}
     </nav>
