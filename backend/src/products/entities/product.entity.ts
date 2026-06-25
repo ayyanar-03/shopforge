@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
+@Index(['name', 'description'], { fulltext: true })
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
@@ -10,6 +11,9 @@ export class Product {
 
   @Column('text')
   description: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  category: string | null;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
