@@ -5,16 +5,13 @@ import api from '../api';
 interface CartItem {
   id: number;
   quantity: number;
-  product: {
-    id: number;
-    name: string;
-    price: number;
-  };
+  product: { id: number; name: string; price: number };
 }
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState(false);
   const navigate = useNavigate();
 
   const fetchCart = async () => {
@@ -23,9 +20,7 @@ export default function CartPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchCart();
-  }, []);
+  useEffect(() => { fetchCart(); }, []);
 
   const removeItem = async (id: number) => {
     await api.delete(`/cart/${id}`);
@@ -33,42 +28,71 @@ export default function CartPage() {
   };
 
   const checkout = async () => {
+    setCheckingOut(true);
     try {
       await api.post('/orders');
       navigate('/orders');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Checkout failed');
+      setCheckingOut(false);
     }
   };
 
-  if (loading) return <p style={{ padding: '2rem' }}>Loading...</p>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-64">
+      <div className="text-gray-500 text-sm">Loading cart...</div>
+    </div>
+  );
 
   const total = items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '1rem' }}>
-      <h1>Cart</h1>
+    <div className="max-w-2xl mx-auto px-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Cart</h1>
+
       {items.length === 0 ? (
-        <p>Your cart is empty.</p>
+        <div className="text-center py-16 text-gray-500">
+          <p className="text-lg mb-3">Your cart is empty.</p>
+          <a href="/products" className="text-blue-600 hover:underline text-sm">Browse products</a>
+        </div>
       ) : (
-        <>
-          {items.map((item) => (
-            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid #eee' }}>
-              <div>
-                <strong>{item.product.name}</strong>
-                <p>${Number(item.product.price).toFixed(2)} x {item.quantity}</p>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="divide-y divide-gray-100">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between px-5 py-4">
+                <div>
+                  <p className="font-medium text-gray-900">{item.product.name}</p>
+                  <p className="text-sm text-gray-500">${Number(item.product.price).toFixed(2)} × {item.quantity}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="font-semibold text-gray-900">
+                    ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="text-sm text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>${(Number(item.product.price) * item.quantity).toFixed(2)}</span>
-                <button onClick={() => removeItem(item.id)}>Remove</button>
-              </div>
-            </div>
-          ))}
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Total: ${total.toFixed(2)}</span>
-            <button onClick={checkout} style={{ padding: '0.5rem 2rem', fontSize: '1rem' }}>Place Order</button>
+            ))}
           </div>
-        </>
+
+          <div className="border-t border-gray-200 px-5 py-4 bg-gray-50 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total</p>
+              <p className="text-xl font-bold text-gray-900">${total.toFixed(2)}</p>
+            </div>
+            <button
+              onClick={checkout}
+              disabled={checkingOut}
+              className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              {checkingOut ? 'Placing order...' : 'Place Order'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

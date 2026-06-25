@@ -21,40 +21,56 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/orders').then(({ data }) => {
-      setOrders(Array.isArray(data) ? data : data.data ?? []);
-      setLoading(false);
-    });
+    api.get('/orders')
+      .then(({ data }) => setOrders(Array.isArray(data) ? data : data.data ?? []))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p style={{ padding: '2rem' }}>Loading...</p>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-64">
+      <div className="text-gray-500 text-sm">Loading orders...</div>
+    </div>
+  );
 
   return (
-    <div style={{ maxWidth: 700, margin: '2rem auto', padding: '1rem' }}>
-      <h1>Orders</h1>
+    <div className="max-w-3xl mx-auto px-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Orders</h1>
+
       {orders.length === 0 ? (
-        <p>No orders yet.</p>
+        <div className="text-center py-16 text-gray-500">
+          <p className="text-lg mb-3">No orders yet.</p>
+          <a href="/products" className="text-blue-600 hover:underline text-sm">Start shopping</a>
+        </div>
       ) : (
-        orders.map((order) => (
-          <div key={order.id} style={{ border: '1px solid #ddd', borderRadius: 8, padding: '1rem', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Order #{order.id}</span>
-              <span style={{ textTransform: 'capitalize', color: order.status === 'confirmed' ? 'green' : '#888' }}>
-                {order.status}
-              </span>
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
+                <div>
+                  <span className="font-semibold text-gray-900">Order #{order.id}</span>
+                  <span className="ml-3 text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</span>
+                </div>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${order.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {order.status}
+                </span>
+              </div>
+
+              <div className="divide-y divide-gray-50">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex justify-between px-5 py-3 text-sm">
+                    <span className="text-gray-700">{item.product.name} <span className="text-gray-400">× {item.quantity}</span></span>
+                    <span className="font-medium text-gray-900">${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end px-5 py-3 border-t border-gray-100">
+                <span className="text-sm text-gray-500 mr-2">Total</span>
+                <span className="font-bold text-gray-900">${Number(order.total).toFixed(2)}</span>
+              </div>
             </div>
-            <p style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(order.createdAt).toLocaleString()}</p>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {order.items.map((item) => (
-                <li key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0' }}>
-                  <span>{item.product.name} x {item.quantity}</span>
-                  <span>${(Number(item.price) * item.quantity).toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
-            <p style={{ fontWeight: 'bold', textAlign: 'right' }}>Total: ${Number(order.total).toFixed(2)}</p>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

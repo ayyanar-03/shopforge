@@ -34,43 +34,57 @@ export default function LoginPage() {
   if (isLoading) return null;
 
   return (
-    <div style={{ maxWidth: 400, margin: '4rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 8 }}>
-      <h2 style={{ marginBottom: '1.5rem' }}>Login</h2>
-      {error && (
-        <p style={{ color: '#c0392b', background: '#fdecea', padding: '0.6rem 0.8rem', borderRadius: 4, marginBottom: '1rem' }}>
-          {error}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="bg-white w-full max-w-md rounded-xl shadow-sm border border-gray-200 p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome back</h2>
+
+        {error && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isSubmitting}
+              placeholder="you@example.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isSubmitting}
+              placeholder="••••••••"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+
+        <p className="mt-5 text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-blue-600 font-medium hover:underline">
+            Sign Up
+          </Link>
         </p>
-      )}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input
-          placeholder="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isSubmitting}
-          style={{ padding: '0.6rem 0.8rem', border: '1px solid #ccc', borderRadius: 4, fontSize: '1rem' }}
-        />
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isSubmitting}
-          style={{ padding: '0.6rem 0.8rem', border: '1px solid #ccc', borderRadius: 4, fontSize: '1rem' }}
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{ padding: '0.65rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, fontSize: '1rem', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1 }}
-        >
-          {isSubmitting ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-      <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-        Don't have an account? <Link to="/signup">Sign Up</Link>
-      </p>
+      </div>
     </div>
   );
 }
