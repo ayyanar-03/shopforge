@@ -3,6 +3,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { SearchDto } from './dto/search.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -19,10 +20,22 @@ export class ProductsController {
     return this.productsService.findAll(pagination.page!, pagination.limit!);
   }
 
+  @Get('search')
+  @SkipThrottle()
+  search(@Query() dto: SearchDto) {
+    return this.productsService.search(dto);
+  }
+
   @Get(':id')
   @SkipThrottle()
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.findOne(id);
+  }
+
+  @Get(':id/related')
+  @SkipThrottle()
+  findRelated(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.findRelated(id);
   }
 
   @Post()

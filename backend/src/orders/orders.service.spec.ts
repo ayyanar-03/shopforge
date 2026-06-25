@@ -112,9 +112,9 @@ describe('OrdersService', () => {
       const orders = [{ id: 1, userId: 1, total: 50 }];
       orderRepo.findByUserId.mockResolvedValue(orders);
 
-      const result = await service.getOrders(1);
+      const result = await service.getOrders(1, 1, 20);
       expect(result).toEqual(orders);
-      expect(orderRepo.findByUserId).toHaveBeenCalledWith(1);
+      expect(orderRepo.findByUserId).toHaveBeenCalledWith(1, 1, 20);
     });
   });
 

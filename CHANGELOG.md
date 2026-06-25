@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0-search] - 2026-06-25
+
+### Added
+
+- **MySQL FULLTEXT search:** Composite FULLTEXT index on `products(name, description)`; `GET /products/search` supports text query, category filter, price range filter, and sort (price, name, newest)
+- **`category` column** on `Product` entity (nullable varchar) with support in create/update DTOs
+- **Related products:** `GET /products/:id/related` returns up to 4 products sharing the same category
+- **Search bar** on the Products page with 350ms debounce, live filtering, URL sync via `useSearchParams`
+- **Filter controls:** category dropdown, min/max price inputs, sort select with "Clear filters" button
+- ADR-002: FULLTEXT search rationale and Elasticsearch migration path
+
+### Changed
+
+- Short queries (< 3 chars) fall back to `LIKE` to work around MySQL minimum token length
+- Search results not cached (dynamic queries with arbitrary filter combinations)
+- `app.controller.spec.ts` updated for renamed `getHealth()` method
+- `orders.service.spec.ts` updated for paginated `getOrders(userId, page, limit)` signature
+
 ## [0.4.0-perf] - 2026-06-24
 
 ### Added

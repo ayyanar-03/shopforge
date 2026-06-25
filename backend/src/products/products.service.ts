@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { SearchDto } from './dto/search.dto';
 import { PRODUCT_REPOSITORY } from './repositories/product.repository.interface';
 import type { IProductRepository } from './repositories/product.repository.interface';
 import { CacheService } from '../cache/cache.service';
@@ -35,6 +36,16 @@ export class ProductsService {
 
     await this.cache.set(cacheKey, product, CACHE_TTL);
     return product;
+  }
+
+  async search(dto: SearchDto) {
+    return this.productRepo.search(dto);
+  }
+
+  async findRelated(id: number) {
+    const product = await this.productRepo.findById(id);
+    if (!product) throw new NotFoundException('Product not found');
+    return this.productRepo.findRelated(product.category, id, 4);
   }
 
   async create(dto: CreateProductDto) {
