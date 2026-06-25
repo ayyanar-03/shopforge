@@ -9,14 +9,12 @@ import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return null;
+  const { user } = useAuth();
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function RootRedirect() {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return null;
+  const { user } = useAuth();
   return <Navigate to={user ? '/products' : '/login'} replace />;
 }
 
@@ -31,8 +29,22 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
-          <Route path="/cart" element={<PrivateRoute><CartPage /></PrivateRoute>} />
-          <Route path="/orders" element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
+          <Route
+            path="/cart"
+            element={
+              <PrivateRoute>
+                <CartPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <PrivateRoute>
+                <OrdersPage />
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

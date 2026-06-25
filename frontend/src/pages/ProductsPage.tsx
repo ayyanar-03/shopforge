@@ -45,7 +45,8 @@ export default function ProductsPage() {
     setLoading(true);
     setError('');
     try {
-      let data: any;
+      type ApiResult = Product[] | { data: Product[]; total: number };
+      let data: ApiResult;
       if (isFiltering) {
         const params = new URLSearchParams();
         if (debouncedQuery) params.set('q', debouncedQuery);
@@ -54,15 +55,15 @@ export default function ProductsPage() {
         if (maxPrice) params.set('maxPrice', maxPrice);
         params.set('sortBy', sortBy);
         params.set('sortOrder', sortOrder);
-        const res = await api.get(`/products/search?${params}`);
+        const res = await api.get<ApiResult>(`/products/search?${params}`);
         data = res.data;
       } else {
         const params = new URLSearchParams({ sortBy, sortOrder });
-        const res = await api.get(`/products?${params}`);
+        const res = await api.get<ApiResult>(`/products?${params}`);
         data = res.data;
       }
-      setProducts(Array.isArray(data) ? data : data.data ?? []);
-      setTotal(data.total ?? 0);
+      setProducts(Array.isArray(data) ? data : (data.data ?? []));
+      setTotal(Array.isArray(data) ? 0 : (data.total ?? 0));
     } catch {
       setError('Failed to load products. Please try again.');
     } finally {
@@ -71,7 +72,8 @@ export default function ProductsPage() {
   }, [debouncedQuery, category, minPrice, maxPrice, sortBy, sortOrder, isFiltering]);
 
   useEffect(() => {
-    fetchProducts();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchProducts();
     const p = new URLSearchParams();
     if (debouncedQuery) p.set('q', debouncedQuery);
     if (category) p.set('category', category);
@@ -80,11 +82,24 @@ export default function ProductsPage() {
     if (sortBy !== 'createdAt') p.set('sortBy', sortBy);
     if (sortOrder !== 'DESC') p.set('sortOrder', sortOrder);
     setSearchParams(p, { replace: true });
-  }, [debouncedQuery, category, minPrice, maxPrice, sortBy, sortOrder]);
+  }, [
+    debouncedQuery,
+    category,
+    minPrice,
+    maxPrice,
+    sortBy,
+    sortOrder,
+    fetchProducts,
+    setSearchParams,
+  ]);
 
   const clearFilters = () => {
-    setQuery(''); setCategory(''); setMinPrice(''); setMaxPrice('');
-    setSortBy('createdAt'); setSortOrder('DESC');
+    setQuery('');
+    setCategory('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSortBy('createdAt');
+    setSortOrder('DESC');
   };
 
   return (
@@ -108,7 +123,11 @@ export default function ProductsPage() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="">All Categories</option>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
 
         <input
@@ -132,7 +151,8 @@ export default function ProductsPage() {
           value={`${sortBy}:${sortOrder}`}
           onChange={(e) => {
             const [sb, so] = e.target.value.split(':');
-            setSortBy(sb); setSortOrder(so);
+            setSortBy(sb);
+            setSortOrder(so);
           }}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
@@ -159,7 +179,9 @@ export default function ProductsPage() {
           {isFiltering ? 'Search Results' : 'Products'}
         </h1>
         {!loading && (
-          <span className="text-sm text-gray-500">{total} product{total !== 1 ? 's' : ''}</span>
+          <span className="text-sm text-gray-500">
+            {total} product{total !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
 
@@ -174,7 +196,10 @@ export default function ProductsPage() {
       {!loading && error && (
         <div className="text-center py-12">
           <p className="text-red-600 mb-3">{error}</p>
-          <button onClick={fetchProducts} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+          <button
+            onClick={fetchProducts}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          >
             Retry
           </button>
         </div>
@@ -213,8 +238,12 @@ export default function ProductsPage() {
                   {p.description ?? 'No description'}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">${Number(p.price).toFixed(2)}</span>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${p.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                  <span className="text-lg font-bold text-gray-900">
+                    ${Number(p.price).toFixed(2)}
+                  </span>
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded-full ${p.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}
+                  >
                     {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
                   </span>
                 </div>
