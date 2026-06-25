@@ -14,7 +14,7 @@ import { RedisCacheModule } from './cache/cache.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: process.env.DB_HOST || 'localhost',
+      host: process.env.DB_HOST || '127.0.0.1',
       port: parseInt(process.env.DB_PORT || '3307', 10),
       username: process.env.DB_USER || 'shopforge_user',
       password: process.env.DB_PASSWORD || 'shopforge_pass',
