@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { Order, OrderStatus } from '../orders/entities/order.entity';
+import { CouponsService } from '../coupons/coupons.service';
+import { CreateCouponDto } from '../coupons/dto/create-coupon.dto';
 
 @Injectable()
 export class AdminService {
@@ -11,6 +13,7 @@ export class AdminService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Product) private readonly productRepo: Repository<Product>,
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    private readonly couponsService: CouponsService,
   ) {}
 
   async getStats() {
@@ -56,5 +59,21 @@ export class AdminService {
     if (!order) throw new NotFoundException('Order not found');
     order.status = status;
     return this.orderRepo.save(order);
+  }
+
+  getCoupons() {
+    return this.couponsService.findAll();
+  }
+
+  createCoupon(dto: CreateCouponDto) {
+    return this.couponsService.create(dto);
+  }
+
+  toggleCoupon(id: number) {
+    return this.couponsService.toggle(id);
+  }
+
+  deleteCoupon(id: number) {
+    return this.couponsService.remove(id);
   }
 }

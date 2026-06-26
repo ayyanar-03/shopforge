@@ -13,6 +13,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminCouponsPage from './pages/admin/AdminCouponsPage';
 import SellerDashboardPage from './pages/seller/SellerDashboardPage';
 import SellerProductsPage from './pages/seller/SellerProductsPage';
 import ProductFormPage from './pages/seller/ProductFormPage';
@@ -99,6 +100,7 @@ function App() {
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="orders" element={<AdminOrdersPage />} />
+            <Route path="coupons" element={<AdminCouponsPage />} />
           </Route>
 
           <Route
