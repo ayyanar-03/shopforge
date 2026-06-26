@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8-infra] - 2026-06-27
+
+### Added
+
+- **Dockerfiles (multi-stage, `node:20-alpine`)** for all five services: `backend/Dockerfile` (catalog-service), `services/order-service/Dockerfile`, `services/notification-service/Dockerfile`, `gateway/Dockerfile`, `frontend/Dockerfile` (nginx:alpine serving Vite build); each includes a `HEALTHCHECK` instruction and a two-stage build (all deps → compile → prod-deps-only runtime)
+- **`docker-compose.yml` (full system)** — replaces the previous infra-only compose; runs MySQL + Redis + catalog-service + order-service + notification-service + gateway + frontend; all application services depend on infra healthchecks before starting; gateway waits for catalog and order services to be healthy; all env vars (`DB_*`, `REDIS_*`, `JWT_SECRET`, `INTERNAL_TOKEN`, SMTP, Stripe/Razorpay keys) are injected via environment blocks with safe defaults; `VITE_API_BASE_URL` is passed as a Docker build arg to the frontend
+- **`frontend/nginx.conf`** — serves React SPA with `try_files $uri $uri/ /index.html` for client-side routing; gzip enabled for common MIME types
+- **Structured logging via `nestjs-pino`** — added `nestjs-pino@^4.1.0` and `pino-http@^10.3.0` to all four NestJS services; `pino-pretty@^13.0.0` as devDependency; `LoggerModule.forRoot()` registered in each `AppModule`; `app.useLogger(app.get(Logger))` called in each `main.ts` with `bufferLogs: true`; dev mode outputs pretty single-line logs, production outputs structured JSON; `LOG_LEVEL` env var controls verbosity
+- **Health endpoints** — each service exposes `GET /health` returning `{ status, service, version, timestamp }`:
+  - `catalog-service :3001/health` — existed, updated to version `0.8.0` and added timestamp
+  - `order-service :3002/health` — new `HealthController`; excluded from the `/api` global prefix
+  - `notification-service :3003/health` — new `HealthController`
+  - `gateway :3000/health` — inline `HealthController` in `AppModule`
+- **`frontend/src/api.ts`** — base URL now reads `import.meta.env.VITE_API_BASE_URL` with fallback to `http://localhost:3000`; makes the Docker build-arg injectable without changing dev defaults
+- **`.github/workflows/ci.yml`** — GitHub Actions CI workflow:
+  - On every push / PR to master: runs `catalog-lint`, `catalog-test`, `order-build`, `notification-build`, `gateway-build`, `frontend-lint`, `frontend-build` as parallel jobs
+  - On push to master only (after all jobs pass): `docker-build` job logs into GitHub Container Registry and pushes images to `ghcr.io/{repo}/{service}:latest` with GHA layer caching per service
+
+### Changed
+
+- `backend/src/main.ts` — port default changed from `3000` to `3001` (catalog-service now runs on 3001; gateway is the public entry point on 3000)
+- `backend/src/app.service.ts` — health response updated: `service: 'catalog-service'`, `version: '0.8.0'`, added `timestamp`
+- `docker-compose.yml` — rewrote to include all application services; MySQL internal port is now `3306` (Docker default); host-side port mapping `3307:3306` preserved for local dev
+
 ## [0.7-microservices] - 2026-06-27
 
 ### Added

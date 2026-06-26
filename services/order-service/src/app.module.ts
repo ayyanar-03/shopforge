@@ -1,14 +1,25 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { LoggerModule } from 'nestjs-pino';
 import { OrdersModule } from './orders/orders.module';
 import { AdminOrdersModule } from './admin/admin-orders.module';
 import { QueueModule } from './queue/queue.module';
+import { HealthController } from './health/health.controller';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { singleLine: true } }
+            : undefined,
+      },
+    }),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST || '127.0.0.1',
@@ -29,5 +40,6 @@ import { OrderItem } from './orders/entities/order-item.entity';
     OrdersModule,
     AdminOrdersModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

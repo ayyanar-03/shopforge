@@ -1,0 +1,188 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [master]
+
+jobs:
+  # ── Catalog-service: lint + test ──────────────────────────────────────────
+  catalog-lint:
+    name: Lint catalog-service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm install
+        working-directory: backend
+      - run: npx eslint src --max-warnings=0
+        working-directory: backend
+
+  catalog-test:
+    name: Test catalog-service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm install
+        working-directory: backend
+      - run: npm test -- --passWithNoTests --forceExit
+        working-directory: backend
+
+  # ── Order-service: build (TypeScript compile validates correctness) ─────────
+  order-build:
+    name: Build order-service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+        working-directory: services/order-service
+      - run: npm run build
+        working-directory: services/order-service
+
+  # ── Notification-service: build ────────────────────────────────────────────
+  notification-build:
+    name: Build notification-service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+        working-directory: services/notification-service
+      - run: npm run build
+        working-directory: services/notification-service
+
+  # ── Gateway: build ─────────────────────────────────────────────────────────
+  gateway-build:
+    name: Build gateway
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+        working-directory: gateway
+      - run: npm run build
+        working-directory: gateway
+
+  # ── Frontend: lint ─────────────────────────────────────────────────────────
+  frontend-lint:
+    name: Lint frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm install
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+
+  frontend-build:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm install
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  # ── Docker image builds (master only) ─────────────────────────────────────
+  docker-build:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs:
+      - catalog-lint
+      - catalog-test
+      - order-build
+      - notification-build
+      - gateway-build
+      - frontend-lint
+      - frontend-build
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push catalog-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ghcr.io/${{ github.repository }}/catalog-service:latest
+          cache-from: type=gha,scope=catalog
+          cache-to: type=gha,mode=max,scope=catalog
+
+      - name: Build and push order-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/order-service
+          push: true
+          tags: ghcr.io/${{ github.repository }}/order-service:latest
+          cache-from: type=gha,scope=order
+          cache-to: type=gha,mode=max,scope=order
+
+      - name: Build and push notification-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/notification-service
+          push: true
+          tags: ghcr.io/${{ github.repository }}/notification-service:latest
+          cache-from: type=gha,scope=notification
+          cache-to: type=gha,mode=max,scope=notification
+
+      - name: Build and push gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gateway
+          push: true
+          tags: ghcr.io/${{ github.repository }}/gateway:latest
+          cache-from: type=gha,scope=gateway
+          cache-to: type=gha,mode=max,scope=gateway
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          build-args: |
+            VITE_API_BASE_URL=http://localhost:3000
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
