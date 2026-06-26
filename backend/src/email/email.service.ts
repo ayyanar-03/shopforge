@@ -92,4 +92,37 @@ export class EmailService {
       this.logger.error('Failed to send order confirmation email', err);
     }
   }
+
+  async sendLowStockAlert(
+    to: string,
+    sellerName: string,
+    productName: string,
+    currentStock: number,
+  ) {
+    try {
+      const transporter = await this.getTransporter();
+      const html = `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+          <h2 style="color:#dc2626">ShopForge — Low Stock Alert</h2>
+          <p>Hi ${sellerName},</p>
+          <p>Your product <strong>${productName}</strong> is running low.</p>
+          <p style="font-size:18px">Current stock: <strong>${currentStock}</strong> unit${currentStock === 1 ? '' : 's'}</p>
+          <p>Log in to <a href="https://shopforge.dev/seller/products">your seller dashboard</a> to restock.</p>
+        </div>`;
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const info = await transporter.sendMail({
+        from: process.env.SMTP_FROM ?? '"ShopForge" <no-reply@shopforge.dev>',
+        to,
+        subject: `Low stock alert: ${productName} — ShopForge`,
+        html,
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) this.logger.log(`Low-stock email preview: ${previewUrl}`);
+    } catch (err: unknown) {
+      this.logger.error('Failed to send low-stock alert email', err);
+    }
+  }
 }

@@ -22,7 +22,7 @@ export class OrdersController {
 
   @Post()
   placeOrder(@Request() req: AuthenticatedRequest, @Body() dto: PlaceOrderDto) {
-    return this.ordersService.placeOrder(req.user.id, dto.couponCode);
+    return this.ordersService.placeOrder(req.user.id, dto);
   }
 
   @Get()
