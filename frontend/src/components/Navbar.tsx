@@ -35,6 +35,14 @@ export default function Navbar() {
           >
             Orders
           </Link>
+          {user.role === 'admin' && (
+            <Link
+              to="/admin"
+              className="text-gray-600 hover:text-blue-600 text-sm font-medium no-underline"
+            >
+              Admin
+            </Link>
+          )}
           <div className="ml-auto flex items-center gap-4">
             <span className="text-sm text-gray-700 font-medium">{user.name}</span>
             <button

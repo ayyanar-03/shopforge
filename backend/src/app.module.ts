@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
+import { AdminModule } from './admin/admin.module';
 import { RedisCacheModule } from './cache/cache.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { RedisCacheModule } from './cache/cache.module';
     ProductsModule,
     CartModule,
     OrdersModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
