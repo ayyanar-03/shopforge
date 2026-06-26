@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import api from '../../api';
 
+const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
+type OrderStatus = (typeof STATUSES)[number];
+
 interface OrderItem {
   id: number;
   quantity: number;
@@ -10,7 +13,7 @@ interface OrderItem {
 
 interface OrderRow {
   id: number;
-  status: string;
+  status: OrderStatus;
   total: number;
   createdAt: string;
   user: { name: string; email: string };
@@ -24,11 +27,20 @@ interface PagedOrders {
   totalPages: number;
 }
 
+const statusStyle: Record<OrderStatus, string> = {
+  pending: 'bg-gray-100 text-gray-600',
+  confirmed: 'bg-blue-100 text-blue-700',
+  shipped: 'bg-amber-100 text-amber-700',
+  delivered: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
+};
+
 export default function AdminOrdersPage() {
   const [paged, setPaged] = useState<PagedOrders | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [updating, setUpdating] = useState<number | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -39,12 +51,22 @@ export default function AdminOrdersPage() {
       .finally(() => setLoading(false));
   }, [page]);
 
-  const statusStyle = (s: string) =>
-    s === 'confirmed'
-      ? 'bg-green-100 text-green-700'
-      : s === 'cancelled'
-        ? 'bg-red-100 text-red-700'
-        : 'bg-gray-100 text-gray-600';
+  const handleStatusChange = async (orderId: number, status: OrderStatus) => {
+    setUpdating(orderId);
+    try {
+      await api.patch(`/admin/orders/${orderId}/status`, { status });
+      setPaged((prev) =>
+        prev
+          ? {
+              ...prev,
+              data: prev.data.map((o) => (o.id === orderId ? { ...o, status } : o)),
+            }
+          : prev,
+      );
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   return (
     <div>
@@ -60,28 +82,43 @@ export default function AdminOrdersPage() {
                 key={o.id}
                 className="bg-white border border-gray-200 rounded-xl overflow-hidden"
               >
-                <button
-                  onClick={() => setExpanded(expanded === o.id ? null : o.id)}
-                  className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between px-5 py-3">
+                  <button
+                    onClick={() => setExpanded(expanded === o.id ? null : o.id)}
+                    className="flex items-center gap-4 text-left flex-1 hover:opacity-80"
+                  >
                     <span className="font-semibold text-gray-900">#{o.id}</span>
                     <span className="text-sm text-gray-600">{o.user.name}</span>
                     <span className="text-xs text-gray-400">{o.user.email}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-gray-900">${Number(o.total).toFixed(2)}</span>
-                    <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusStyle(o.status)}`}
-                    >
-                      {o.status}
+                    <span className="font-bold text-gray-900 ml-auto mr-4">
+                      ${Number(o.total).toFixed(2)}
                     </span>
                     <span className="text-xs text-gray-400">
                       {new Date(o.createdAt).toLocaleDateString()}
                     </span>
-                    <span className="text-gray-400 text-sm">{expanded === o.id ? '▲' : '▼'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 ml-4">
+                    <select
+                      value={o.status}
+                      disabled={updating === o.id}
+                      onChange={(e) => void handleStatusChange(o.id, e.target.value as OrderStatus)}
+                      className={`text-xs font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-400 ${statusStyle[o.status]}`}
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s} className="bg-white text-gray-800 font-normal">
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setExpanded(expanded === o.id ? null : o.id)}
+                      className="text-gray-400 text-sm w-5 text-center"
+                    >
+                      {expanded === o.id ? '▲' : '▼'}
+                    </button>
                   </div>
-                </button>
+                </div>
 
                 {expanded === o.id && (
                   <div className="border-t border-gray-100 divide-y divide-gray-50">

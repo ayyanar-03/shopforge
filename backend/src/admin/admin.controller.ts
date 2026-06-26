@@ -1,4 +1,13 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Query,
+  Param,
+  Body,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -6,6 +15,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.enum';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,5 +37,10 @@ export class AdminController {
   @Get('orders')
   getOrders(@Query() pagination: PaginationDto) {
     return this.adminService.getOrders(pagination.page!, pagination.limit!);
+  }
+
+  @Patch('orders/:id/status')
+  updateOrderStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderStatusDto) {
+    return this.adminService.updateOrderStatus(id, dto.status);
   }
 }

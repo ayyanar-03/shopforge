@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-26
+
+### Added
+
+- **Order status management:** `PATCH /admin/orders/:id/status` endpoint (admin only); status lifecycle: `pending → confirmed → shipped → delivered → cancelled`; admin orders view replaced static badge with an inline colour-coded dropdown that updates optimistically
+- **Admin dashboard:** stat cards (users, products, orders, revenue), paginated users table with role badges, paginated orders management, paginated product table with delete
+- **Seller portal:** `/seller` area (seller role only) with overview stats (products, reviews, avg rating), product list with edit/delete actions, shared create/edit product form
+- **Product reviews & star ratings:** `POST /products/:id/reviews` (one per user), `GET /products/:id/reviews`; `averageRating` and `reviewCount` denormalised onto `Product` and recalculated on each submission; interactive `StarRating` component (half-star support) shown on cards and detail page
+- **Category-aware product images:** Unsplash photo IDs mapped by category (8 categories × 5 photos) with price-tier fallback; `getProductImage()` utility respects stored `imageUrl` first
+- **`sellerId` column on Product:** stamped from JWT on create; sellers can only edit/delete their own products (admins bypass ownership check)
+- **ESLint/TypeScript strict mode:** eliminated all `any` types across backend and frontend; `AuthenticatedRequest` interface shared across guards and controllers
+
+### Changed
+
+- `OrderStatus` enum extended with `shipped` and `delivered` values
+- Admin orders page refactored: expand/collapse rows, status dropdown replaces static badge
+- Products controller passes `req.user.id` and `req.user.role` to service for ownership enforcement on update/delete
+- Navbar shows role-specific links: Seller (green) for sellers, Admin (blue) for admins
+
 ## [0.5.0-search] - 2026-06-25
 
 ### Added
