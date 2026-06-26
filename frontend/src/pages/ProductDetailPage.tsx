@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { getProductImage } from '../utils/productImage';
 
 interface Product {
   id: number;
@@ -66,9 +67,11 @@ export default function ProductDetailPage() {
       </Link>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-        <div className="w-full h-56 bg-gray-100 rounded-lg mb-6 flex items-center justify-center text-gray-400 text-sm">
-          No image
-        </div>
+        <img
+          src={getProductImage(product)}
+          alt={product.name}
+          className="w-full h-64 object-cover rounded-lg mb-6 bg-gray-100"
+        />
 
         {product.category && (
           <span className="text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full mb-3 inline-block">
@@ -127,9 +130,12 @@ export default function ProductDetailPage() {
             {related.map((r) => (
               <Link to={`/products/${r.id}`} key={r.id} className="group block no-underline">
                 <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all duration-150">
-                  <div className="w-full h-20 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400 text-xs">
-                    No image
-                  </div>
+                  <img
+                    src={getProductImage(r)}
+                    alt={r.name}
+                    className="w-full h-20 object-cover rounded-lg mb-3 bg-gray-100"
+                    loading="lazy"
+                  />
                   <p className="font-medium text-gray-900 text-sm group-hover:text-blue-600 line-clamp-1">
                     {r.name}
                   </p>

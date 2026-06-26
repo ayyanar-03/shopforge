@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
+import { getProductImage } from '../utils/productImage';
 
 interface Product {
   id: number;
@@ -223,9 +224,12 @@ export default function ProductsPage() {
           {products.map((p) => (
             <Link to={`/products/${p.id}`} key={p.id} className="group block no-underline">
               <div className="bg-white border border-gray-200 rounded-xl p-5 h-full hover:shadow-md hover:border-blue-200 transition-all duration-150">
-                <div className="w-full h-36 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-400 text-xs">
-                  No image
-                </div>
+                <img
+                  src={getProductImage(p)}
+                  alt={p.name}
+                  className="w-full h-36 object-cover rounded-lg mb-4 bg-gray-100"
+                  loading="lazy"
+                />
                 {p.category && (
                   <span className="text-xs font-medium px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full mb-2 inline-block">
                     {p.category}
