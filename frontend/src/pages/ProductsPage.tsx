@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImage';
 import StarRating from '../components/StarRating';
+import HeartButton from '../components/HeartButton';
 
 interface Product {
   id: number;
@@ -28,11 +30,13 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function ProductsPage() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState(searchParams.get('category') ?? '');
@@ -42,8 +46,16 @@ export default function ProductsPage() {
   const [sortOrder, setSortOrder] = useState(searchParams.get('sortOrder') ?? 'DESC');
 
   const debouncedQuery = useDebounce(query, 350);
-
   const isFiltering = debouncedQuery || category || minPrice || maxPrice;
+
+  useEffect(() => {
+    if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWishlistIds(new Set());
+      return;
+    }
+    api.get<number[]>('/wishlist/ids').then(({ data }) => setWishlistIds(new Set(data)));
+  }, [user]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -104,6 +116,23 @@ export default function ProductsPage() {
     setMaxPrice('');
     setSortBy('createdAt');
     setSortOrder('DESC');
+  };
+
+  const toggleWishlist = async (productId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+    if (wishlistIds.has(productId)) {
+      await api.delete(`/wishlist/${productId}`);
+      setWishlistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    } else {
+      await api.post(`/wishlist/${productId}`);
+      setWishlistIds((prev) => new Set(prev).add(productId));
+    }
   };
 
   return (
@@ -189,14 +218,12 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* State: loading */}
       {loading && (
         <div className="flex items-center justify-center min-h-48 text-gray-400 text-sm">
           Loading...
         </div>
       )}
 
-      {/* State: error */}
       {!loading && error && (
         <div className="text-center py-12">
           <p className="text-red-600 mb-3">{error}</p>
@@ -209,7 +236,6 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* State: empty */}
       {!loading && !error && products.length === 0 && (
         <div className="text-center py-16 text-gray-500">
           <p className="text-lg mb-2">No products found.</p>
@@ -221,12 +247,20 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Product grid */}
       {!loading && !error && products.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {products.map((p) => (
             <Link to={`/products/${p.id}`} key={p.id} className="group block no-underline">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 h-full hover:shadow-md hover:border-blue-200 transition-all duration-150">
+              <div className="relative bg-white border border-gray-200 rounded-xl p-5 h-full hover:shadow-md hover:border-blue-200 transition-all duration-150">
+                {user && (
+                  <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <HeartButton
+                      wishlisted={wishlistIds.has(p.id)}
+                      onClick={(e) => void toggleWishlist(p.id, e)}
+                      size="sm"
+                    />
+                  </div>
+                )}
                 <img
                   src={getProductImage(p)}
                   alt={p.name}

@@ -16,6 +16,7 @@ import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import SellerDashboardPage from './pages/seller/SellerDashboardPage';
 import SellerProductsPage from './pages/seller/SellerProductsPage';
 import ProductFormPage from './pages/seller/ProductFormPage';
+import WishlistPage from './pages/WishlistPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -65,6 +66,14 @@ function App() {
             element={
               <PrivateRoute>
                 <OrdersPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <PrivateRoute>
+                <WishlistPage />
               </PrivateRoute>
             }
           />

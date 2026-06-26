@@ -35,6 +35,12 @@ export default function Navbar() {
           >
             Orders
           </Link>
+          <Link
+            to="/wishlist"
+            className="text-gray-600 hover:text-red-500 text-sm font-medium no-underline"
+          >
+            Wishlist
+          </Link>
           {user.role === 'seller' && (
             <Link
               to="/seller"
