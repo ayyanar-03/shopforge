@@ -31,4 +31,11 @@ export class TypeOrmOrderRepository implements IOrderRepository {
   async findById(id: number): Promise<Order | null> {
     return this.repo.findOne({ where: { id }, relations: { items: { product: true } } });
   }
+
+  async findByIdempotencyKey(key: string): Promise<Order | null> {
+    return this.repo.findOne({
+      where: { idempotencyKey: key },
+      relations: { items: { product: true } },
+    });
+  }
 }

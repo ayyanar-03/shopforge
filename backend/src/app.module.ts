@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -14,6 +15,7 @@ import { SellerModule } from './seller/seller.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { RedisCacheModule } from './cache/cache.module';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
@@ -27,8 +29,15 @@ import { RedisCacheModule } from './cache/cache.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      },
+    }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     RedisCacheModule,
+    QueueModule,
     UsersModule,
     ProductsModule,
     CartModule,

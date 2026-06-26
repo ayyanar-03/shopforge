@@ -7,4 +7,5 @@ export interface IOrderRepository {
   create(order: Partial<Order>): Promise<Order>;
   findByUserId(userId: number, page: number, limit: number): Promise<PaginatedResult<Order>>;
   findById(id: number): Promise<Order | null>;
+  findByIdempotencyKey(key: string): Promise<Order | null>;
 }

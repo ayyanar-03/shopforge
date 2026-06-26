@@ -16,6 +16,14 @@ interface CouponResult {
   finalTotal: number;
 }
 
+type PaymentMethod = 'cod' | 'stripe' | 'razorpay';
+
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  cod: 'Cash on Delivery',
+  stripe: 'Stripe (test mode)',
+  razorpay: 'Razorpay (test mode)',
+};
+
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +32,9 @@ export default function CartPage() {
   const [coupon, setCoupon] = useState<CouponResult | null>(null);
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  // Stable per cart-page mount — same key on retry prevents double-charge
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const navigate = useNavigate();
 
   const fetchCart = async () => {
@@ -73,7 +84,11 @@ export default function CartPage() {
   const checkout = async () => {
     setCheckingOut(true);
     try {
-      await api.post('/orders', coupon ? { couponCode: coupon.code } : {});
+      await api.post('/orders', {
+        paymentMethod,
+        idempotencyKey,
+        ...(coupon ? { couponCode: coupon.code } : {}),
+      });
       navigate('/orders');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -166,6 +181,28 @@ export default function CartPage() {
               </div>
             )}
             {couponError && <p className="text-red-600 text-xs mt-1.5">{couponError}</p>}
+          </div>
+
+          {/* Payment method */}
+          <div className="border-t border-gray-100 px-5 py-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Payment method
+            </p>
+            <div className="flex flex-col gap-2">
+              {(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => (
+                <label key={method} className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={method}
+                    checked={paymentMethod === method}
+                    onChange={() => setPaymentMethod(method)}
+                    className="accent-blue-600"
+                  />
+                  <span className="text-sm text-gray-700">{PAYMENT_LABELS[method]}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Totals + checkout */}

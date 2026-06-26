@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6-async] - 2026-06-27
+
+### Added
+
+- **BullMQ async job queues (Redis-backed):** two named queues — `notifications` and `inventory`; `QueueModule` registers both and owns the processors; `OrdersModule` injects queues as producers
+- **NotificationProcessor:** BullMQ worker that dequeues `NotificationJob` payloads and dispatches to registered channels via `NotificationService`; order confirmation emails are now non-blocking and retryable
+- **InventoryProcessor:** BullMQ worker that receives an `InventoryJob` after each order; emits a low-stock alert notification when a product's remaining stock falls below the threshold (5 units)
+- **Factory pattern — notification channels:** `INotificationChannel` interface; `NotificationFactory` maps channel type strings (`'email'`) to concrete implementations; `NotificationService.send(channels[], payload)` fans out across all requested channels; adding SMS/push requires only a new class + one `switch` case
+- **Strategy pattern — payment methods:** `IPaymentStrategy` interface with `process(amount, currency, idempotencyKey) → PaymentResult`; three strategies registered in `PaymentService`:
+  - `StripeStrategy` — creates and immediately confirms a `PaymentIntent` via the Stripe SDK (test mode; set `STRIPE_SECRET_KEY` to use live keys)
+  - `RazorpayStrategy` — calls `/v1/orders` over HTTPS with Basic auth; falls back to a dev-mode stub when credentials are absent (`RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`)
+  - `CodStrategy` — synchronous, returns `{ status: 'pending' }` with no external call
+- **Idempotency keys:** `Order` entity gains a unique-nullable `idempotencyKey` column; `PlaceOrderDto` accepts a client-generated UUID v4; `OrdersService` returns the existing order on duplicate key instead of double-charging; `CartPage` generates the key on mount with `crypto.randomUUID()` and holds it stable across retries
+- **Payment fields on Order:** `paymentMethod` (enum: stripe | razorpay | cod), `paymentStatus` (enum: pending | paid | failed), and `paymentId` columns; Stripe sets status to `paid` immediately, Razorpay and COD start as `pending`
+- **Low-stock email alert:** `EmailService.sendLowStockAlert()` sends a formatted HTML email to the seller when inventory drops below threshold; routed through `EmailChannel` via the same factory/service pipeline as order confirmation
+- **Payment method selector in Cart:** radio group (Cash on Delivery / Stripe test / Razorpay test) wired to `POST /orders`; idempotency key sent on every checkout attempt
+
+### Changed
+
+- `OrdersService.placeOrder()` no longer calls `EmailService` directly; fires a queued `NotificationJob` instead; payment is processed before stock decrement (failed payment = no order created)
+- `OrdersModule` drops `EmailModule` import; now imports `PaymentsModule` and registers `BullModule` queues for producing jobs
+- `AppModule` adds `BullModule.forRoot()` (Redis connection) and `QueueModule`
+
 ## [0.6.0] - 2026-06-26
 
 ### Added
