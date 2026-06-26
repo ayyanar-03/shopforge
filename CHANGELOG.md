@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7-microservices] - 2026-06-27
+
+### Added
+
+- **`services/order-service/` (:3002)** — standalone NestJS app extracted from the monolith; owns `orders` + `order_items` tables; includes `CatalogClientService` (HTTP client for internal catalog-service calls), `PaymentsModule` (Strategy pattern: Stripe/Razorpay/COD), BullMQ queue producer, and admin order endpoints; validates JWTs independently via `@nestjs/jwt` without Passport
+- **`services/notification-service/` (:3003)** — standalone NestJS worker; owns `NotificationProcessor` and `InventoryProcessor` (BullMQ consumers); `NotificationFactory` (Factory pattern, `EmailChannel`); `EmailService` (Nodemailer); no HTTP business endpoints, health port only
+- **`gateway/` (:3000)** — NestJS API gateway using `http-proxy-middleware`; routes `/api/orders/*` and `/api/admin/orders/*` and `/api/admin/stats` to order-service; everything else to catalog-service; single public entry point for the React frontend
+- **`backend/src/internal/` (catalog-service)** — `/internal/*` controller group secured by `X-Internal-Token` header; exposes cart, product (with stock decrement returning updated entity), user, coupon apply, and catalog stats for order-service to call at checkout time
+- **`docs/adr/001-microservice-decomposition.md`** — full Architecture Decision Record covering service boundaries, inter-service communication table, consistency tradeoffs (eventual consistency between order and inventory, shared-DB tactical debt, BullMQ retry semantics), and alternatives considered
+
+### Changed
+
+- **`backend/` (catalog-service)** — `OrdersModule`, `EmailModule`, `QueueModule`, `PaymentsModule`, `NotificationsModule` extracted and deleted; `AdminService.getStats()` now calls order-service `/internal/stats` via native `fetch` for order count and revenue, with graceful fallback to zero; admin order CRUD endpoints removed (moved to order-service)
+- **`AdminController`** — order routes (`GET /admin/orders`, `PATCH /admin/orders/:id/status`) removed; coupon CRUD remains
+- **`AppModule`** (catalog-service) — removed `BullModule`, `OrdersModule`, `EmailModule`, `QueueModule`, `PaymentsModule`, `NotificationsModule`; added `InternalModule`
+- **README.md** — added before/after ASCII architecture diagrams, service table, inter-service communication table, per-service `start:dev` commands, and full environment variable reference
+
+### Architecture notes (see ADR 001)
+
+- Order-service and catalog-service share the same MySQL instance for now (separate table sets, no cross-service joins) — documented as accepted tactical debt
+- Checkout involves 5–6 synchronous HTTP calls from order-service to catalog-service; this is the known network cost of the decomposition and is acceptable at current scale
+- A crash between order creation and stock decrement leaves inventory overstated until the next retry; a saga/outbox pattern is the documented next step
+
 ## [0.6-async] - 2026-06-27
 
 ### Added

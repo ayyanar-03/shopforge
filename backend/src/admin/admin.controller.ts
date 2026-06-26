@@ -17,7 +17,6 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.enum';
 import { PaginationDto } from '../common/dto/pagination.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateCouponDto } from '../coupons/dto/create-coupon.dto';
 
 @Controller('admin')
@@ -35,16 +34,6 @@ export class AdminController {
   @Get('users')
   getUsers(@Query() pagination: PaginationDto) {
     return this.adminService.getUsers(pagination.page!, pagination.limit!);
-  }
-
-  @Get('orders')
-  getOrders(@Query() pagination: PaginationDto) {
-    return this.adminService.getOrders(pagination.page!, pagination.limit!);
-  }
-
-  @Patch('orders/:id/status')
-  updateOrderStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderStatusDto) {
-    return this.adminService.updateOrderStatus(id, dto.status);
   }
 
   @Get('coupons')
