@@ -9,6 +9,7 @@ import { USER_REPOSITORY } from '../users/repositories/user.repository.interface
 import type { IUserRepository } from '../users/repositories/user.repository.interface';
 import { OrderStatus } from './entities/order.entity';
 import { EmailService } from '../email/email.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class OrdersService {
@@ -22,34 +23,41 @@ export class OrdersService {
     @Inject(USER_REPOSITORY)
     private readonly userRepo: IUserRepository,
     private readonly emailService: EmailService,
+    private readonly couponsService: CouponsService,
   ) {}
 
-  async placeOrder(userId: number) {
+  async placeOrder(userId: number, couponCode?: string) {
     const cartItems = await this.cartRepo.findByUserId(userId);
-    if (cartItems.length === 0) {
-      throw new BadRequestException('Cart is empty');
-    }
+    if (cartItems.length === 0) throw new BadRequestException('Cart is empty');
 
     for (const item of cartItems) {
       const product = await this.productRepo.findById(item.productId);
-      if (!product) {
-        throw new NotFoundException(`Product ${item.productId} not found`);
-      }
-      if (product.stock < item.quantity) {
+      if (!product) throw new NotFoundException(`Product ${item.productId} not found`);
+      if (product.stock < item.quantity)
         throw new BadRequestException(`Insufficient stock for "${product.name}"`);
-      }
     }
 
-    let total = 0;
+    let subtotal = 0;
     const orderItems = cartItems.map((item) => {
       const lineTotal = Number(item.product.price) * item.quantity;
-      total += lineTotal;
+      subtotal += lineTotal;
       return {
         productId: item.productId,
         quantity: item.quantity,
         price: Number(item.product.price),
       };
     });
+
+    let discount = 0;
+    let appliedCode: string | null = null;
+
+    if (couponCode) {
+      const result = await this.couponsService.applyAndIncrement(couponCode, subtotal);
+      discount = result.discountAmount;
+      appliedCode = result.code;
+    }
+
+    const total = parseFloat((subtotal - discount).toFixed(2));
 
     for (const item of cartItems) {
       await this.productRepo.decrementStock(item.productId, item.quantity);
@@ -58,6 +66,8 @@ export class OrdersService {
     const order = await this.orderRepo.create({
       userId,
       total,
+      discount,
+      couponCode: appliedCode,
       status: OrderStatus.PENDING,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       items: orderItems as any,
@@ -65,7 +75,6 @@ export class OrdersService {
 
     await this.cartRepo.clearCart(userId);
 
-    // Send confirmation email (non-blocking — failure is logged, not thrown)
     const user = await this.userRepo.findById(userId);
     if (user) {
       void this.emailService.sendOrderConfirmation(user.email, user.name, {

@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
+  Delete,
   Query,
   Param,
   Body,
@@ -16,6 +18,7 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.enum';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { CreateCouponDto } from '../coupons/dto/create-coupon.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,5 +45,25 @@ export class AdminController {
   @Patch('orders/:id/status')
   updateOrderStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderStatusDto) {
     return this.adminService.updateOrderStatus(id, dto.status);
+  }
+
+  @Get('coupons')
+  getCoupons() {
+    return this.adminService.getCoupons();
+  }
+
+  @Post('coupons')
+  createCoupon(@Body() dto: CreateCouponDto) {
+    return this.adminService.createCoupon(dto);
+  }
+
+  @Patch('coupons/:id/toggle')
+  toggleCoupon(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.toggleCoupon(id);
+  }
+
+  @Delete('coupons/:id')
+  deleteCoupon(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deleteCoupon(id);
   }
 }
