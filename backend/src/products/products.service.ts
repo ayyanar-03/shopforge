@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchDto } from './dto/search.dto';
@@ -48,22 +48,30 @@ export class ProductsService {
     return this.productRepo.findRelated(product.category, id, 4);
   }
 
-  async create(dto: CreateProductDto) {
-    const product = await this.productRepo.create(dto);
+  async create(dto: CreateProductDto, sellerId: number) {
+    const product = await this.productRepo.create({ ...dto, sellerId });
     await this.cache.delByPattern('products:list:*');
     return product;
   }
 
-  async update(id: number, dto: UpdateProductDto) {
-    const product = await this.productRepo.update(id, dto);
+  async update(id: number, dto: UpdateProductDto, userId: number, userRole: string) {
+    const product = await this.productRepo.findById(id);
     if (!product) throw new NotFoundException('Product not found');
+    if (userRole === 'seller' && product.sellerId !== userId) {
+      throw new ForbiddenException('You can only edit your own products');
+    }
+    const updated = await this.productRepo.update(id, dto);
     await this.cache.del(`products:detail:${id}`);
     await this.cache.delByPattern('products:list:*');
-    return product;
+    return updated;
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, userId: number, userRole: string) {
+    const product = await this.productRepo.findById(id);
+    if (!product) throw new NotFoundException('Product not found');
+    if (userRole === 'seller' && product.sellerId !== userId) {
+      throw new ForbiddenException('You can only delete your own products');
+    }
     await this.productRepo.delete(id);
     await this.cache.del(`products:detail:${id}`);
     await this.cache.delByPattern('products:list:*');

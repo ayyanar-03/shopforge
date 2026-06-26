@@ -35,6 +35,14 @@ export default function Navbar() {
           >
             Orders
           </Link>
+          {user.role === 'seller' && (
+            <Link
+              to="/seller"
+              className="text-gray-600 hover:text-green-600 text-sm font-medium no-underline"
+            >
+              Seller
+            </Link>
+          )}
           {user.role === 'admin' && (
             <Link
               to="/admin"
