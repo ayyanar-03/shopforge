@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import AdminLayout from './components/AdminLayout';
+import SellerLayout from './components/SellerLayout';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProductsPage from './pages/ProductsPage';
@@ -12,6 +13,9 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import SellerDashboardPage from './pages/seller/SellerDashboardPage';
+import SellerProductsPage from './pages/seller/SellerProductsPage';
+import ProductFormPage from './pages/seller/ProductFormPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -22,6 +26,13 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'admin') return <Navigate to="/products" replace />;
+  return <>{children}</>;
+}
+
+function SellerRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'seller') return <Navigate to="/products" replace />;
   return <>{children}</>;
 }
 
@@ -57,6 +68,7 @@ function App() {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/admin"
             element={
@@ -69,6 +81,20 @@ function App() {
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="orders" element={<AdminOrdersPage />} />
+          </Route>
+
+          <Route
+            path="/seller"
+            element={
+              <SellerRoute>
+                <SellerLayout />
+              </SellerRoute>
+            }
+          >
+            <Route index element={<SellerDashboardPage />} />
+            <Route path="products" element={<SellerProductsPage />} />
+            <Route path="products/new" element={<ProductFormPage />} />
+            <Route path="products/:id/edit" element={<ProductFormPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

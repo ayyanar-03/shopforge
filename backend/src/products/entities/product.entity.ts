@@ -31,6 +31,9 @@ export class Product {
   @Column({ nullable: true })
   imageUrl: string;
 
+  @Column({ nullable: true })
+  sellerId: number | null;
+
   @Column('decimal', { precision: 3, scale: 2, default: 0 })
   averageRating: number;
 
