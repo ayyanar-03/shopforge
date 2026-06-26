@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import { getProductImage } from '../utils/productImage';
+import StarRating from '../components/StarRating';
 
 interface Product {
   id: number;
@@ -11,6 +12,8 @@ interface Product {
   price: number;
   stock: number;
   imageUrl: string | null;
+  averageRating: number;
+  reviewCount: number;
 }
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Toys', 'Food', 'Beauty'];
@@ -238,6 +241,12 @@ export default function ProductsPage() {
                 <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
                   {p.name}
                 </h3>
+                {p.reviewCount > 0 && (
+                  <div className="flex items-center gap-1 mb-1">
+                    <StarRating value={p.averageRating} size="sm" />
+                    <span className="text-xs text-gray-400">({p.reviewCount})</span>
+                  </div>
+                )}
                 <p className="text-gray-500 text-sm mb-3 line-clamp-2">
                   {p.description ?? 'No description'}
                 </p>
