@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, UnauthorizedException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException,
+  Inject,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
@@ -6,6 +12,8 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { USER_REPOSITORY } from './repositories/user.repository.interface';
 import type { IUserRepository } from './repositories/user.repository.interface';
 import { RefreshToken } from '../auth/entities/refresh-token.entity';
@@ -31,7 +39,6 @@ export class UsersService {
     const token = crypto.randomBytes(48).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-
     const refreshToken = this.refreshTokenRepo.create({ token, userId, expiresAt });
     await this.refreshTokenRepo.save(refreshToken);
     return token;
@@ -39,9 +46,7 @@ export class UsersService {
 
   async signup(dto: SignupDto) {
     const existing = await this.userRepo.findByEmail(dto.email);
-    if (existing) {
-      throw new ConflictException('Email already in use');
-    }
+    if (existing) throw new ConflictException('Email already in use');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const user = await this.userRepo.create({
@@ -62,14 +67,10 @@ export class UsersService {
 
   async login(dto: LoginDto) {
     const user = await this.userRepo.findByEmail(dto.email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(dto.password, user.password);
-    if (!valid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     const accessToken = this.generateAccessToken(user);
     const refreshToken = await this.generateRefreshToken(user.id);
@@ -88,13 +89,11 @@ export class UsersService {
 
     if (!stored || stored.expiresAt < new Date()) {
       if (stored) {
-        // Possible token reuse — revoke all tokens for this user
         await this.refreshTokenRepo.update({ userId: stored.userId }, { revoked: true });
       }
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    // Rotate: revoke old token, issue new pair
     stored.revoked = true;
     await this.refreshTokenRepo.save(stored);
 
@@ -109,5 +108,36 @@ export class UsersService {
 
   async cleanupExpiredTokens() {
     await this.refreshTokenRepo.delete({ expiresAt: LessThan(new Date()) });
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    };
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    user.name = dto.name;
+    const saved = await this.userRepo.save(user);
+    return { id: saved.id, name: saved.name, email: saved.email, role: saved.role };
+  }
+
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const valid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!valid) throw new UnauthorizedException('Current password is incorrect');
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.userRepo.save(user);
   }
 }

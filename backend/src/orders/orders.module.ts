@@ -8,9 +8,17 @@ import { TypeOrmOrderRepository } from './repositories/order.repository';
 import { ORDER_REPOSITORY } from './repositories/order.repository.interface';
 import { CartModule } from '../cart/cart.module';
 import { ProductsModule } from '../products/products.module';
+import { EmailModule } from '../email/email.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, OrderItem]), CartModule, ProductsModule],
+  imports: [
+    TypeOrmModule.forFeature([Order, OrderItem]),
+    CartModule,
+    ProductsModule,
+    EmailModule,
+    UsersModule,
+  ],
   controllers: [OrdersController],
   providers: [OrdersService, { provide: ORDER_REPOSITORY, useClass: TypeOrmOrderRepository }],
 })

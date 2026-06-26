@@ -58,7 +58,12 @@ export default function Navbar() {
             </Link>
           )}
           <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm text-gray-700 font-medium">{user.name}</span>
+            <Link
+              to="/profile"
+              className="text-sm text-gray-700 font-medium hover:text-blue-600 no-underline"
+            >
+              {user.name}
+            </Link>
             <button
               onClick={handleLogout}
               className="text-sm px-3 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer"

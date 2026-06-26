@@ -25,6 +25,10 @@ import { JwtStrategy } from '../auth/jwt.strategy';
     JwtStrategy,
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
   ],
-  exports: [JwtModule, PassportModule],
+  exports: [
+    JwtModule,
+    PassportModule,
+    { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
+  ],
 })
 export class UsersModule {}
