@@ -1,6 +1,22 @@
 version: "3.8"
 
+x-db-env: &db-env
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_USER: shopforge_user
+  DB_PASSWORD: shopforge_pass
+  DB_NAME: shopforge
+
+x-redis-env: &redis-env
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+
+x-jwt-env: &jwt-env
+  JWT_SECRET: ${JWT_SECRET:-shopforge_secret}
+  INTERNAL_TOKEN: ${INTERNAL_TOKEN:-shopforge_internal}
+
 services:
+  # ── Infrastructure ─────────────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: shopforge-mysql
@@ -15,10 +31,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -33,6 +50,119 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ── Application services ────────────────────────────────────────────────────
+  catalog-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shopforge-catalog
+    restart: unless-stopped
+    environment:
+      <<: [*db-env, *redis-env, *jwt-env]
+      PORT: "3001"
+      NODE_ENV: production
+      ORDER_SERVICE_URL: http://order-service:3002
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: shopforge-orders
+    restart: unless-stopped
+    environment:
+      <<: [*db-env, *redis-env, *jwt-env]
+      PORT: "3002"
+      NODE_ENV: production
+      CATALOG_SERVICE_URL: http://catalog-service:3001
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: shopforge-notifications
+    restart: unless-stopped
+    environment:
+      <<: *redis-env
+      PORT: "3003"
+      NODE_ENV: production
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: shopforge-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      NODE_ENV: production
+      CATALOG_SERVICE_URL: http://catalog-service:3001
+      ORDER_SERVICE_URL: http://order-service:3002
+      CORS_ORIGIN: http://localhost:5173
+    depends_on:
+      catalog-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    container_name: shopforge-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
 
 volumes:
   mysql_data:

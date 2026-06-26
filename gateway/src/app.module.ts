@@ -1,4 +1,5 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { Controller, Get, MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { LoggerModule } from 'nestjs-pino';
 import { createProxyMiddleware, type Options } from 'http-proxy-middleware';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -18,7 +19,28 @@ function proxy(target: string): (req: Request, res: Response, next: NextFunction
   return handler as (req: Request, res: Response, next: NextFunction) => void;
 }
 
-@Module({})
+@Controller()
+class HealthController {
+  @Get('health')
+  check() {
+    return { status: 'ok', service: 'gateway', version: '0.8.0', timestamp: new Date().toISOString() };
+  }
+}
+
+@Module({
+  imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { singleLine: true } }
+            : undefined,
+      },
+    }),
+  ],
+  controllers: [HealthController],
+})
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Order-service handles: /api/orders/*, /api/admin/orders/*, /api/admin/stats

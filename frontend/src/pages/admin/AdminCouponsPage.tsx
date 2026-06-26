@@ -14,9 +14,18 @@ interface Coupon {
   createdAt: string;
 }
 
-const EMPTY = {
+interface CouponForm {
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: string;
+  minOrderAmount: string;
+  maxUses: string;
+  expiresAt: string;
+}
+
+const EMPTY: CouponForm = {
   code: '',
-  type: 'percentage' as const,
+  type: 'percentage',
   value: '',
   minOrderAmount: '',
   maxUses: '',

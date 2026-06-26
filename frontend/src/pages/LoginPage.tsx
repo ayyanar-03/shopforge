@@ -19,7 +19,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const { data } = await api.post<{
-        user: { id: number; name: string; email: string };
+        user: { id: number; name: string; email: string; role: string };
         accessToken: string;
       }>('/auth/login', { email, password });
       login(data.user, data.accessToken);
