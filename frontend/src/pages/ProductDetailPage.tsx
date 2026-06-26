@@ -4,6 +4,7 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImage';
 import StarRating from '../components/StarRating';
+import HeartButton from '../components/HeartButton';
 
 interface Product {
   id: number;
@@ -44,16 +45,16 @@ export default function ProductDetailPage() {
   const [myComment, setMyComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [wishlisted, setWishlisted] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProduct(null);
-
     setRelated([]);
-
     setReviews(null);
+    setWishlisted(false);
     api.get<Product>(`/products/${id}`).then(({ data }) => {
       setProduct(data);
       api.get<Product[]>(`/products/${id}/related`).then((r) => setRelated(r.data ?? []));
@@ -62,6 +63,25 @@ export default function ProductDetailPage() {
       .get<ReviewsResponse>(`/products/${id}/reviews?limit=20`)
       .then(({ data }) => setReviews(data));
   }, [id]);
+
+  useEffect(() => {
+    if (!user || !id) return;
+    api.get<number[]>('/wishlist/ids').then(({ data }) => setWishlisted(data.includes(Number(id))));
+  }, [user, id]);
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (wishlisted) {
+      await api.delete(`/wishlist/${id}`);
+      setWishlisted(false);
+    } else {
+      await api.post(`/wishlist/${id}`);
+      setWishlisted(true);
+    }
+  };
 
   const addToCart = async () => {
     if (!user) {
@@ -142,7 +162,12 @@ export default function ProductDetailPage() {
           </span>
         )}
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">{product.name}</h1>
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
+          {user && (
+            <HeartButton wishlisted={wishlisted} onClick={() => void toggleWishlist()} size="md" />
+          )}
+        </div>
 
         {product.reviewCount > 0 && (
           <div className="flex items-center gap-2 mb-3">
@@ -178,7 +203,7 @@ export default function ProductDetailPage() {
               className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
-              onClick={addToCart}
+              onClick={() => void addToCart()}
               disabled={isAdding}
               className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
@@ -202,7 +227,6 @@ export default function ProductDetailPage() {
           Reviews{reviews && reviews.reviewCount > 0 ? ` (${reviews.reviewCount})` : ''}
         </h2>
 
-        {/* Write a review */}
         {user && (
           <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
             <p className="text-sm font-semibold text-gray-700 mb-3">Write a review</p>
@@ -232,7 +256,6 @@ export default function ProductDetailPage() {
           </div>
         )}
 
-        {/* Review list */}
         {reviews && reviews.data.length > 0 ? (
           <div className="space-y-3">
             {reviews.data.map((r) => (
