@@ -52,7 +52,7 @@ export class OrdersService {
     const order = await this.orderRepo.create({
       userId,
       total,
-      status: OrderStatus.CONFIRMED,
+      status: OrderStatus.PENDING,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       items: orderItems as any, // partial shape passed; entity relations are created by the repo
     });

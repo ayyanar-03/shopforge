@@ -1,6 +1,22 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 
+const STATUS_STYLE: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-600',
+  confirmed: 'bg-blue-100 text-blue-700',
+  shipped: 'bg-amber-100 text-amber-700',
+  delivered: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
 interface OrderItem {
   id: number;
   quantity: number;
@@ -60,9 +76,9 @@ export default function OrdersPage() {
                   </span>
                 </div>
                 <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${order.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[order.status] ?? 'bg-gray-100 text-gray-600'}`}
                 >
-                  {order.status}
+                  {STATUS_LABEL[order.status] ?? order.status}
                 </span>
               </div>
 
