@@ -4,209 +4,253 @@ A full-stack e-commerce platform built with NestJS and React.
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph Client["Client (Browser)"]
-        React["React SPA<br/>Vite + TypeScript<br/>:5173"]
-        AuthCtx["AuthContext<br/>JWT in localStorage"]
-        AxiosClient["Axios HTTP Client<br/>Bearer token interceptor"]
-        React --> AuthCtx
-        React --> AxiosClient
-    end
+### v0.7 — Decomposed (current)
 
-    subgraph Server["NestJS Monolith (:3000)"]
-        direction TB
-        CORS["CORS Middleware"]
-        ValidationPipe["ValidationPipe<br/>whitelist + transform"]
-        CORS --> ValidationPipe
-
-        subgraph Modules["Domain Modules"]
-            direction LR
-            AuthMod["Auth<br/>JWT Strategy<br/>Passport Guard"]
-            UserMod["Users<br/>signup · login"]
-            ProductMod["Products<br/>CRUD"]
-            CartMod["Cart<br/>add · remove · clear"]
-            OrderMod["Orders<br/>place · list · detail"]
-        end
-
-        ValidationPipe --> Modules
-
-        subgraph RepoLayer["Repository Layer"]
-            direction LR
-            IRepos["Interfaces<br/>IUserRepository<br/>IProductRepository<br/>ICartRepository<br/>IOrderRepository"]
-            TypeORMRepos["TypeORM Implementations"]
-            IRepos -. "DI" .-> TypeORMRepos
-        end
-
-        Modules --> RepoLayer
-    end
-
-    subgraph Infra["Infrastructure (Docker Compose)"]
-        MySQL[("MySQL 8.0<br/>:3307 → :3306")]
-        Redis[("Redis 7<br/>:6379")]
-    end
-
-    AxiosClient -->|"REST / JSON"| CORS
-    TypeORMRepos --> MySQL
-    Server -. "planned" .-> Redis
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Browser  React SPA :5173                                               │
+│           Axios + JWT Bearer header                                     │
+└─────────────────────────┬───────────────────────────────────────────────┘
+                          │ REST / JSON
+                          ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Gateway  :3000  (NestJS proxy — no business logic)                     │
+│                                                                         │
+│  /api/orders/*         ──────────────────────────┐                      │
+│  /api/admin/orders/*   ──────────────────────────┤                      │
+│  /api/admin/stats      ──────────────────────────┤                      │
+│  everything else       ──────────┐               │                      │
+└─────────────────────────────────┬┼───────────────┼──────────────────────┘
+                                  ││               │
+                    HTTP proxy    ││               │  HTTP proxy
+                                  ▼▼               ▼
+┌──────────────────────────────────┐  ┌────────────────────────────────────┐
+│  catalog-service  :3001          │  │  order-service  :3002              │
+│                                  │  │                                    │
+│  Auth (JWT + Passport)           │  │  OrdersController                  │
+│  Users  · Products (Redis cache) │  │  AdminOrdersController             │
+│  Cart   · Reviews · Seller       │  │  PaymentService                    │
+│  Wishlist · Coupons · Admin      │  │    StripeStrategy                  │
+│  InternalController (/internal/) │◄─┤    RazorpayStrategy                │
+│    cart · products · users       │  │    CodStrategy                     │
+│    coupons · stats               │  │  CatalogClientService (HTTP)       │
+└──────────────┬───────────────────┘  └──────────────┬─────────────────────┘
+               │                                      │
+               │ TypeORM                              │ TypeORM        BullMQ
+               │                                      │             enqueue job
+               ▼                                      ▼                  │
+┌──────────────────────┐   ┌──────────────────────┐  │                  │
+│  MySQL :3307         │   │  Redis :6379          │◄─┘                  │
+│  (shared instance,   │   │  • Cache-aside        │                     │
+│   catalog tables +   │   │  • BullMQ queues:     │                     ▼
+│   orders tables)     │   │    notifications      │  ┌──────────────────────────┐
+└──────────────────────┘   │    inventory          │  │  notification-service    │
+                           └──────────────────────┘  │  :3003 (worker-only)     │
+                                      ▲              │                          │
+                                      └──────────────┤  NotificationProcessor   │
+                                     dequeue jobs    │  InventoryProcessor      │
+                                                     │  NotificationFactory     │
+                                                     │    EmailChannel          │
+                                                     │  EmailService            │
+                                                     └──────────────────────────┘
 ```
 
-### Data Flow
+### v0.6 — Monolith (before decomposition)
 
-1. **Authentication:** Client sends credentials to `/auth/signup` or `/auth/login`, receives a JWT token stored in localStorage.
-2. **Products:** Public CRUD endpoints at `/products`. No auth required for read operations.
-3. **Cart:** Authenticated users manage cart items via `/cart`. Items reference products with eager-loaded relations.
-4. **Orders:** `POST /orders` validates stock, creates an order from the current cart, decrements product stock, and clears the cart atomically.
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Browser  React SPA :5173                                    │
+└──────────────────────────┬───────────────────────────────────┘
+                           │ REST / JSON
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  NestJS Monolith  :3000                                      │
+│                                                              │
+│  Auth · Users · Products · Cart · Orders · Admin             │
+│  Reviews · Seller · Wishlist · Coupons                       │
+│  PaymentService (Stripe / Razorpay / COD)                    │
+│  EmailService (Nodemailer)                                   │
+│  BullMQ Producers + Processors (same process)                │
+│                              │                               │
+│                     TypeORM  │  BullMQ                       │
+└─────────────────────────────┬┼──────────────────────────────┘
+                              ││
+                   ┌──────────┘└────────────┐
+                   ▼                        ▼
+        ┌──────────────────┐    ┌──────────────────┐
+        │  MySQL :3307     │    │  Redis :6379      │
+        └──────────────────┘    └──────────────────┘
+```
 
-### Repository Pattern
+### Service responsibilities
 
-Each domain module defines a repository interface (e.g., `IProductRepository`) separate from its TypeORM implementation. Services depend on the interface via NestJS dependency injection (`@Inject` + token), making the data layer swappable without changing business logic.
+| Service              | Port | Owns                                                              |
+|----------------------|------|-------------------------------------------------------------------|
+| gateway              | 3000 | URL routing only; no auth, no business logic                      |
+| catalog-service      | 3001 | Auth, users, products, cart, reviews, seller, wishlist, coupons   |
+| order-service        | 3002 | Order lifecycle, payments, idempotency, admin order management    |
+| notification-service | 3003 | BullMQ workers; email delivery; extensible channel factory        |
+
+### Inter-service communication
+
+| Caller               | Callee               | Transport       | Purpose                              |
+|----------------------|----------------------|-----------------|--------------------------------------|
+| order-service        | catalog-service      | REST `/internal` | Cart, stock, user, coupon lookups    |
+| order-service        | Redis                | BullMQ enqueue  | Queue notification + inventory jobs  |
+| notification-service | Redis                | BullMQ dequeue  | Process jobs, send emails            |
+| catalog-service admin stats | order-service | REST `/internal` | Aggregate order count + revenue     |
+
+See [docs/adr/001-microservice-decomposition.md](docs/adr/001-microservice-decomposition.md) for the full decision record including consistency tradeoffs.
+
+---
 
 ## Tech Stack
 
-| Layer          | Technology                          |
-|----------------|-------------------------------------|
-| Frontend       | React 19, TypeScript, Vite 8        |
-| Backend        | NestJS 11, TypeScript, TypeORM      |
-| Auth           | JWT via passport-jwt, bcrypt        |
-| Database       | MySQL 8.0                           |
-| Cache          | Redis 7 (provisioned, not yet used) |
-| Containerization | Docker Compose                    |
+| Layer            | Technology                                         |
+|------------------|----------------------------------------------------|
+| Frontend         | React 19, TypeScript, Vite 8, Tailwind CSS v4      |
+| Gateway          | NestJS 10, http-proxy-middleware                   |
+| Catalog-service  | NestJS 11, TypeORM, Passport/JWT, Redis cache-aside|
+| Order-service    | NestJS 11, TypeORM, BullMQ producer, Stripe SDK   |
+| Notification-svc | NestJS 11, BullMQ workers, Nodemailer              |
+| Database         | MySQL 8.0 (shared instance, separate table sets)   |
+| Queue / Cache    | Redis 7                                            |
+| Containerization | Docker Compose                                     |
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js >= 18
-- Docker & Docker Compose (or locally installed MySQL and Redis)
+- Docker & Docker Compose (for MySQL + Redis)
 - npm
 
-### 1. Clone the repository
+### 1. Start infrastructure
 
 ```bash
-git clone https://github.com/ayyanar-03/shopforge.git
-cd shopforge
+docker-compose up -d   # MySQL on :3307, Redis on :6379
 ```
 
-### 2. Start infrastructure
-
-**Option A — Docker (recommended):**
-
-```bash
-docker-compose up -d
-```
-
-This starts MySQL on port **3307** and Redis on port **6379**.
-
-**Option B — Local services:**
-
-If Docker is unavailable, install MySQL and Redis locally. Ensure MySQL is running on port 3307 (or update `DB_PORT` in your environment).
-
-### 3. Install and run the backend
+### 2. Run catalog-service (was: backend)
 
 ```bash
 cd backend
 npm install
-npm run start:dev
+npm run start:dev      # :3001
 ```
 
-The API starts at `http://localhost:3000`. TypeORM `synchronize: true` auto-creates tables on first run.
+### 3. Run order-service
 
-### 4. Install and run the frontend
+```bash
+cd services/order-service
+npm install
+npm run start:dev      # :3002
+```
+
+### 4. Run notification-service
+
+```bash
+cd services/notification-service
+npm install
+npm run start:dev      # :3003 (worker — processes BullMQ jobs)
+```
+
+### 5. Run gateway
+
+```bash
+cd gateway
+npm install
+npm run start:dev      # :3000 — the single public entry point
+```
+
+### 6. Run the frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev            # :5173
 ```
 
-The app starts at `http://localhost:5173`.
+The frontend's `VITE_API_BASE_URL` (defaults to `http://localhost:3000`) points at the
+gateway. All API calls route through the gateway transparently.
 
 ### Environment Variables
 
-| Variable      | Default              | Description         |
-|---------------|----------------------|---------------------|
-| `DB_HOST`     | `localhost`          | MySQL host          |
-| `DB_PORT`     | `3307`               | MySQL port          |
-| `DB_USER`     | `shopforge_user`     | MySQL username      |
-| `DB_PASSWORD` | `shopforge_pass`     | MySQL password      |
-| `DB_NAME`     | `shopforge`          | MySQL database name |
-| `JWT_SECRET`  | `shopforge-dev-secret` | JWT signing key   |
-| `PORT`        | `3000`               | API server port     |
+| Variable               | Default                  | Used by              |
+|------------------------|--------------------------|----------------------|
+| `DB_HOST`              | `127.0.0.1`              | catalog, order       |
+| `DB_PORT`              | `3307`                   | catalog, order       |
+| `DB_USER`              | `shopforge_user`         | catalog, order       |
+| `DB_PASSWORD`          | `shopforge_pass`         | catalog, order       |
+| `DB_NAME`              | `shopforge`              | catalog, order       |
+| `REDIS_HOST`           | `127.0.0.1`              | catalog, order, notif|
+| `REDIS_PORT`           | `6379`                   | catalog, order, notif|
+| `JWT_SECRET`           | `shopforge_secret`       | catalog, order       |
+| `INTERNAL_TOKEN`       | `shopforge_internal`     | catalog, order, gw   |
+| `CATALOG_SERVICE_URL`  | `http://localhost:3001`  | order, gateway       |
+| `ORDER_SERVICE_URL`    | `http://localhost:3002`  | catalog, gateway     |
+| `STRIPE_SECRET_KEY`    | `sk_test_placeholder`    | order                |
+| `RAZORPAY_KEY_ID`      | *(absent = dev stub)*    | order                |
+| `RAZORPAY_KEY_SECRET`  | *(absent = dev stub)*    | order                |
+| `SMTP_HOST`            | *(absent = Ethereal dev)*| notification         |
 
-### Running Tests
-
-```bash
-cd backend
-npm test
-```
-
-## API Endpoints
-
-| Method | Endpoint         | Auth | Description              |
-|--------|------------------|------|--------------------------|
-| POST   | /auth/signup     | No   | Register a new user      |
-| POST   | /auth/login      | No   | Login and get JWT token  |
-| GET    | /products        | No   | List all products        |
-| GET    | /products/:id    | No   | Get product details      |
-| POST   | /products        | No   | Create a product         |
-| PUT    | /products/:id    | No   | Update a product         |
-| DELETE | /products/:id    | No   | Delete a product         |
-| GET    | /cart            | Yes  | Get cart items           |
-| POST   | /cart            | Yes  | Add item to cart         |
-| DELETE | /cart/:id        | Yes  | Remove cart item         |
-| DELETE | /cart            | Yes  | Clear cart               |
-| POST   | /orders          | Yes  | Place order from cart    |
-| GET    | /orders          | Yes  | List user's orders       |
-| GET    | /orders/:id      | Yes  | Get order details        |
-
-## Performance
-
-Redis cache-aside caching on product endpoints, with `@SkipThrottle()` on read routes. Benchmarked with [autocannon](https://github.com/mcollina/autocannon) (10 connections, 10s duration, 50 products in DB).
-
-| Metric | Before (MySQL only) | After (Redis cache) | Change |
-|--------|--------------------:|--------------------:|-------:|
-| Req/sec | 2,742 | 3,223 | +17.5% |
-| Latency avg | 3.15 ms | 2.55 ms | -19.0% |
-| Latency p50 | 2 ms | 2 ms | — |
-| Latency p99 | 12 ms | 6 ms | -50.0% |
-| Throughput | 1,044 KB/s | 14,478 KB/s | +13.9x |
-
-> **Note:** The "Before" run was affected by the global rate limiter (60 req/min), causing most requests to return 429. The "After" run uses `@SkipThrottle()` on product GET endpoints, so all 32k requests hit the cache path. The throughput increase is primarily from returning paginated JSON (vs. 429 responses) and Redis serving cached results.
-
-Run the benchmark yourself:
-
-```bash
-node scripts/load-test.js http://localhost:3000/products
-```
+---
 
 ## Project Structure
 
 ```
 shopforge/
-├── backend/
+├── backend/                   # catalog-service (:3001)
 │   └── src/
-│       ├── auth/              # JWT strategy, guards, RBAC, refresh tokens
-│       ├── cache/             # Redis cache-aside service
-│       ├── common/            # Shared DTOs (pagination)
-│       ├── users/             # User entity, service, controller, repository
-│       ├── products/          # Product CRUD with repository pattern + caching
-│       ├── cart/              # Cart management
-│       ├── orders/            # Order placement and stock management
-│       ├── app.module.ts      # Root module with TypeORM + Throttler + Redis
-│       └── main.ts            # Bootstrap with CORS and validation
-├── frontend/
+│       ├── auth/              # JWT strategy, Passport, RBAC
+│       ├── cache/             # Redis cache-aside
+│       ├── internal/          # /internal/* endpoints for order-service
+│       ├── users · products · cart · reviews
+│       ├── seller · wishlist · coupons · admin
+│       └── app.module.ts
+│
+├── services/
+│   ├── order-service/         # order-service (:3002)
+│   │   └── src/
+│   │       ├── auth/          # Standalone JWT guard (no Passport)
+│   │       ├── catalog-client/ # HTTP client for catalog-service
+│   │       ├── orders/        # Entity, service, controller
+│   │       ├── payments/      # Strategy pattern (Stripe/Razorpay/COD)
+│   │       ├── queue/         # BullMQ producer only
+│   │       └── admin/         # Admin order endpoints
+│   │
+│   └── notification-service/  # notification-service (:3003)
+│       └── src/
+│           ├── email/         # EmailService (Nodemailer)
+│           ├── notifications/ # Factory pattern (channels)
+│           └── queue/         # BullMQ processors (workers)
+│
+├── gateway/                   # API gateway (:3000)
 │   └── src/
-│       ├── context/           # Auth context provider
-│       ├── components/        # Shared components (Navbar)
-│       ├── pages/             # Page components
-│       ├── api.ts             # Axios client with auth interceptor
-│       └── App.tsx            # Router setup
+│       └── app.module.ts      # http-proxy-middleware routing
+│
+├── frontend/                  # React SPA (:5173)
 ├── docs/adr/                  # Architecture Decision Records
-├── docker-compose.yml         # MySQL + Redis
+│   └── 001-microservice-decomposition.md
+├── docker-compose.yml
 ├── CHANGELOG.md
 └── README.md
 ```
+
+---
+
+## Performance (v0.4-perf benchmarks)
+
+Redis cache-aside on product endpoints. Benchmarked with autocannon (10c, 10s, 50 products).
+
+| Metric          | MySQL only | Redis cache | Change  |
+|-----------------|----------:|------------:|--------:|
+| Req/sec         | 2,742     | 3,223       | +17.5%  |
+| Latency avg     | 3.15 ms   | 2.55 ms     | -19.0%  |
+| Latency p99     | 12 ms     | 6 ms        | -50.0%  |
+| Throughput      | 1,044 KB/s| 14,478 KB/s | +13.9×  |
 
 ## License
 
