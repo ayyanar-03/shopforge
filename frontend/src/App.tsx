@@ -17,6 +17,7 @@ import SellerDashboardPage from './pages/seller/SellerDashboardPage';
 import SellerProductsPage from './pages/seller/SellerProductsPage';
 import ProductFormPage from './pages/seller/ProductFormPage';
 import WishlistPage from './pages/WishlistPage';
+import ProfilePage from './pages/ProfilePage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -74,6 +75,14 @@ function App() {
             element={
               <PrivateRoute>
                 <WishlistPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
               </PrivateRoute>
             }
           />

@@ -5,7 +5,10 @@ import { CART_REPOSITORY } from '../cart/repositories/cart.repository.interface'
 import type { ICartRepository } from '../cart/repositories/cart.repository.interface';
 import { PRODUCT_REPOSITORY } from '../products/repositories/product.repository.interface';
 import type { IProductRepository } from '../products/repositories/product.repository.interface';
+import { USER_REPOSITORY } from '../users/repositories/user.repository.interface';
+import type { IUserRepository } from '../users/repositories/user.repository.interface';
 import { OrderStatus } from './entities/order.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OrdersService {
@@ -16,6 +19,9 @@ export class OrdersService {
     private readonly cartRepo: ICartRepository,
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepo: IProductRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly userRepo: IUserRepository,
+    private readonly emailService: EmailService,
   ) {}
 
   async placeOrder(userId: number) {
@@ -54,10 +60,24 @@ export class OrdersService {
       total,
       status: OrderStatus.PENDING,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      items: orderItems as any, // partial shape passed; entity relations are created by the repo
+      items: orderItems as any,
     });
 
     await this.cartRepo.clearCart(userId);
+
+    // Send confirmation email (non-blocking — failure is logged, not thrown)
+    const user = await this.userRepo.findById(userId);
+    if (user) {
+      void this.emailService.sendOrderConfirmation(user.email, user.name, {
+        id: order.id,
+        total,
+        items: cartItems.map((item) => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: Number(item.product.price),
+        })),
+      });
+    }
 
     return order;
   }
