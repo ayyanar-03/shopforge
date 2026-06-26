@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
-import { Order } from '../orders/entities/order.entity';
+import { Order, OrderStatus } from '../orders/entities/order.entity';
 
 @Injectable()
 export class AdminService {
@@ -49,5 +49,12 @@ export class AdminService {
       take: limit,
     });
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async updateOrderStatus(id: number, status: OrderStatus) {
+    const order = await this.orderRepo.findOneBy({ id });
+    if (!order) throw new NotFoundException('Order not found');
+    order.status = status;
+    return this.orderRepo.save(order);
   }
 }
