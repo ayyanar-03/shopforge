@@ -1,4 +1,5 @@
-import { Controller, Get, MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { Controller, Get, Header, MiddlewareConsumer, Module, NestModule, OnModuleInit, RequestMethod } from '@nestjs/common';
+import { collectDefaultMetrics, register } from 'prom-client';
 import { LoggerModule } from 'nestjs-pino';
 import { createProxyMiddleware, type Options } from 'http-proxy-middleware';
 import type { Request, Response, NextFunction } from 'express';
@@ -27,6 +28,15 @@ class HealthController {
   }
 }
 
+@Controller('metrics')
+class MetricsController {
+  @Get()
+  @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+  async metrics(): Promise<string> {
+    return register.metrics();
+  }
+}
+
 @Module({
   imports: [
     LoggerModule.forRoot({
@@ -39,9 +49,12 @@ class HealthController {
       },
     }),
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, MetricsController],
 })
-export class AppModule implements NestModule {
+export class AppModule implements NestModule, OnModuleInit {
+  onModuleInit() {
+    collectDefaultMetrics({ prefix: 'shopforge_gateway_' });
+  }
   configure(consumer: MiddlewareConsumer) {
     // Order-service handles: /api/orders/*, /api/admin/orders/*, /api/admin/stats
     consumer
@@ -54,9 +67,13 @@ export class AppModule implements NestModule {
         { path: 'api/admin/stats', method: RequestMethod.ALL },
       );
 
-    // Everything else goes to catalog-service
+    // Everything else goes to catalog-service; exclude gateway-local routes
     consumer
       .apply(proxy(CATALOG_URL))
+      .exclude(
+        { path: 'health', method: RequestMethod.GET },
+        { path: 'metrics', method: RequestMethod.GET },
+      )
       .forRoutes({ path: '*path', method: RequestMethod.ALL });
   }
 }

@@ -6,6 +6,7 @@ import { OrdersModule } from './orders/orders.module';
 import { AdminOrdersModule } from './admin/admin-orders.module';
 import { QueueModule } from './queue/queue.module';
 import { HealthController } from './health/health.controller';
+import { MetricsModule } from './metrics/metrics.module';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
 
@@ -36,6 +37,7 @@ import { OrderItem } from './orders/entities/order-item.entity';
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
       },
     }),
+    MetricsModule,
     QueueModule,
     OrdersModule,
     AdminOrdersModule,

@@ -15,6 +15,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { RedisCacheModule } from './cache/cache.module';
 import { InternalModule } from './internal/internal.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { InternalModule } from './internal/internal.module';
       synchronize: true,
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    MetricsModule,
     RedisCacheModule,
     InternalModule,
     UsersModule,

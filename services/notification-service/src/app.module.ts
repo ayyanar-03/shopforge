@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { NotificationsModule } from './notifications/notifications.module';
 import { QueueModule } from './queue/queue.module';
 import { HealthController } from './health/health.controller';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { HealthController } from './health/health.controller';
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
       },
     }),
+    MetricsModule,
     NotificationsModule,
     QueueModule,
   ],
