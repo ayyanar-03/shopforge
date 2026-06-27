@@ -18,12 +18,12 @@ export class Order {
   @Column() userId: number;
   @Column('decimal', { precision: 10, scale: 2 }) total: number;
   @Column('decimal', { precision: 10, scale: 2, default: 0 }) discount: number;
-  @Column({ nullable: true }) couponCode: string | null;
+  @Column({ nullable: true, type: 'varchar' }) couponCode: string | null;
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING }) status: OrderStatus;
   @Column({ type: 'enum', enum: PaymentMethod, default: PaymentMethod.COD }) paymentMethod: PaymentMethod;
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING }) paymentStatus: PaymentStatus;
-  @Column({ nullable: true }) paymentId: string | null;
-  @Column({ nullable: true, unique: true }) idempotencyKey: string | null;
+  @Column({ nullable: true, type: 'varchar' }) paymentId: string | null;
+  @Column({ nullable: true, unique: true, type: 'varchar' }) idempotencyKey: string | null;
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true }) items: OrderItem[];
   @CreateDateColumn() createdAt: Date;
 }
