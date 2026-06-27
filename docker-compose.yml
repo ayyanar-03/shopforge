@@ -1,5 +1,8 @@
 version: "3.8"
 
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+
 x-db-env: &db-env
   DB_HOST: mysql
   DB_PORT: "3306"
@@ -59,15 +62,18 @@ services:
     container_name: shopforge-catalog
     restart: unless-stopped
     environment:
-      <<: [*db-env, *redis-env, *jwt-env]
+      <<: [*db-env, *redis-env, *jwt-env, *otel-env]
       PORT: "3001"
       NODE_ENV: production
       ORDER_SERVICE_URL: http://order-service:3002
+      OTEL_SERVICE_NAME: catalog-service
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
       interval: 15s
@@ -82,18 +88,21 @@ services:
     container_name: shopforge-orders
     restart: unless-stopped
     environment:
-      <<: [*db-env, *redis-env, *jwt-env]
+      <<: [*db-env, *redis-env, *jwt-env, *otel-env]
       PORT: "3002"
       NODE_ENV: production
       CATALOG_SERVICE_URL: http://catalog-service:3001
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      OTEL_SERVICE_NAME: order-service
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
       interval: 15s
@@ -108,16 +117,19 @@ services:
     container_name: shopforge-notifications
     restart: unless-stopped
     environment:
-      <<: *redis-env
+      <<: [*redis-env, *otel-env]
       PORT: "3003"
       NODE_ENV: production
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
+      OTEL_SERVICE_NAME: notification-service
     depends_on:
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
       interval: 15s
@@ -134,16 +146,20 @@ services:
     ports:
       - "3000:3000"
     environment:
+      <<: *otel-env
       PORT: "3000"
       NODE_ENV: production
       CATALOG_SERVICE_URL: http://catalog-service:3001
       ORDER_SERVICE_URL: http://order-service:3002
       CORS_ORIGIN: http://localhost:5173
+      OTEL_SERVICE_NAME: gateway
     depends_on:
       catalog-service:
         condition: service_healthy
       order-service:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 15s
@@ -164,6 +180,31 @@ services:
       gateway:
         condition: service_healthy
 
+  # ── Observability ──────────────────────────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: shopforge-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: shopforge-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
 volumes:
   mysql_data:
   redis_data:
+  prometheus_data:
