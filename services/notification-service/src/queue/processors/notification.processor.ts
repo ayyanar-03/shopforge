@@ -1,14 +1,14 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { NOTIFICATION_QUEUE } from '../queue.module';
+import { NOTIFICATION_QUEUE } from '../queue.constants';
 import { NotificationService } from '../../notifications/notification.service';
 import type { NotificationPayload } from '../../notifications/channels/notification-channel.interface';
 import type { ChannelType } from '../../notifications/notification.factory';
 
 interface NotificationJob { channels: ChannelType[]; payload: NotificationPayload }
 
-@Processor(NOTIFICATION_QUEUE)
+@Processor({ name: NOTIFICATION_QUEUE })
 export class NotificationProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationProcessor.name);
   constructor(private readonly service: NotificationService) { super(); }

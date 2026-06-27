@@ -3,9 +3,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { NotificationProcessor } from './processors/notification.processor';
 import { InventoryProcessor } from './processors/inventory.processor';
+import { NOTIFICATION_QUEUE, INVENTORY_QUEUE } from './queue.constants';
 
-export const NOTIFICATION_QUEUE = 'notifications';
-export const INVENTORY_QUEUE = 'inventory';
+export { NOTIFICATION_QUEUE, INVENTORY_QUEUE } from './queue.constants';
 
 @Module({
   imports: [
