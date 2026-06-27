@@ -22,7 +22,7 @@ export class Coupon {
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   minOrderAmount: number | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'int' })
   maxUses: number | null;
 
   @Column({ default: 0 })

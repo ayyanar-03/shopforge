@@ -28,10 +28,10 @@ export class Product {
   @Column({ default: 0 })
   stock: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   imageUrl: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'int' })
   sellerId: number | null;
 
   @Column('decimal', { precision: 3, scale: 2, default: 0 })
