@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-28
+
+### Added
+
+- **RETROSPECTIVE.md** — post-project analysis covering root causes of every break during development, lessons learned about NestJS internals, TypeORM 1.0 migration gotchas, and next-steps for Elasticsearch, Kafka, and Kubernetes at production scale
+- **`cart.service.spec.ts`** (backend) — 6 unit tests covering `getCart`, `addItem` (new item + quantity merge), `removeItem`, `clearCart`; all backed by a mocked `ICartRepository`
+- **`orders.service.spec.ts`** (order-service) — 11 unit tests including idempotency dedup, empty cart, insufficient stock, COD happy path, coupon application, Stripe PAID status, parallel stock decrement, low-stock inventory fan-out, pagination math, `getOrder` not-found, and `getStats` null-table edge case
+- **`payment.service.spec.ts`** (order-service) — 5 unit tests verifying the Strategy routing for Stripe, Razorpay, and COD, rejection of unknown methods, and isolation between strategies
+- **Jest configuration added to order-service** — `devDependencies` (`@nestjs/testing`, `jest`, `ts-jest`, `@types/jest`) and `jest` block in `package.json`; `"test"` and `"test:cov"` scripts added
+
+### Changed
+
+- **`OrdersService.placeOrder()` refactored** — eliminated N+1 HTTP calls: stock validation now uses `.product.stock` already on the `CartItemDto` from `getCartItems()` instead of making one `GET /internal/products/:id` call per cart item; `as never` TypeScript escape hatch replaced with `DeepPartial<OrderItem>[]`; side-effect accumulation in `.map()` replaced with `.reduce()`; method decomposed into four private helpers: `validateStock`, `buildLineItems`, `decrementAllStock`, `dispatchPostOrderJobs`; seller fetches for low-stock alerts now run in parallel with `Promise.all` instead of sequentially
+- **`app.controller.spec.ts`** — updated health response expectations to match current `service: 'catalog-service'`, `version: '0.8.0'`, and `timestamp` shape
+- **README.md** — full rewrite: v1.0 architecture diagram includes observability stack, observability port table, design patterns table, Docker Compose startup instructions, local dev instructions, test instructions, updated env var table, RETROSPECTIVE.md cross-reference
+
+## [0.9-observability] - 2026-06-28
+
+### Added
+
+- **OpenTelemetry tracing** — `@opentelemetry/sdk-node` added to all four NestJS services; conditional on `OTEL_EXPORTER_OTLP_ENDPOINT` env var; SIGTERM handler shuts down the SDK cleanly; `tracer.ts` imported at the top of each `main.ts`
+- **Prometheus metrics** — `prom-client` added to all four services; `MetricsModule` calls `collectDefaultMetrics()` with a per-service prefix (`shopforge_catalog_`, `shopforge_order_`, `shopforge_notification_`, `shopforge_gateway_`); `GET /metrics` endpoint exposed on each service
+- **Jaeger** (`jaegertracing/all-in-one:1.56`) added to `docker-compose.yml`; OTLP HTTP on port 4318, UI on port 16686
+- **Prometheus** (`prom/prometheus:v2.51.0`) added to `docker-compose.yml`; scrapes all four services via `prometheus.yml`
+- **Grafana** (`grafana/grafana:10.4.2`) added to `docker-compose.yml` on host port 4000; auto-provisioned Prometheus datasource via `monitoring/grafana/provisioning/datasources/prometheus.yml`; dashboard file provider via `monitoring/grafana/provisioning/dashboards/dashboard.yml`
+- **`products.service.spec.ts`** — 10 unit tests for `ProductsService` (mock `IProductRepository` + `CacheService`)
+- **`coupons.service.spec.ts`** — 16 unit tests for `CouponsService` (mock TypeORM `Repository<Coupon>`)
+
+### Fixed
+
+- **Gateway proxy** — moved `http-proxy-middleware` from NestJS middleware to the Express adapter level; NestJS middleware only fires for paths with registered handlers, so the catch-all proxy was silently dropping all catalog routes
+- **TypeORM 1.0 `DataTypeNotSupportedError`** — added explicit `type: 'varchar'` / `type: 'int'` to all `@Column({ nullable: true })` decorators on `Product`, `Coupon`, and `Order` entities
+- **notification-service crash** — `NOTIFICATION_QUEUE` and `INVENTORY_QUEUE` constants extracted to `queue.constants.ts`; circular import between `queue.module.ts` and processors caused the constants to be `undefined` at class decoration time
+- **Frontend healthcheck** — switched from `wget` to `curl -fs`; nginx:alpine does not include `wget`
+
 ## [0.8-infra] - 2026-06-27
 
 ### Added

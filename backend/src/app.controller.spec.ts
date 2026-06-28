@@ -16,11 +16,11 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return health status', () => {
-      expect(appController.getHealth()).toEqual({
-        status: 'ok',
-        service: 'shopforge-api',
-        version: '0.4.0',
-      });
+      const result = appController.getHealth();
+      expect(result.status).toBe('ok');
+      expect(result.service).toBe('catalog-service');
+      expect(result.version).toBe('0.8.0');
+      expect(typeof result.timestamp).toBe('string');
     });
   });
 });
