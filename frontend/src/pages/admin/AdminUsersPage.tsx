@@ -1,20 +1,10 @@
 import { useEffect, useState } from 'react';
-import api from '../../api';
+import { adminService } from '../../services/admin.service';
+import type { User } from '../../types/user.types';
+import type { PagedResponse } from '../../types/common.types';
 
-interface UserRow {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
-}
-
-interface PagedUsers {
-  data: UserRow[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
+type UserRow = User & { createdAt: string };
+type PagedUsers = PagedResponse<UserRow>;
 
 export default function AdminUsersPage() {
   const [paged, setPaged] = useState<PagedUsers | null>(null);
@@ -24,9 +14,9 @@ export default function AdminUsersPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    api
-      .get<PagedUsers>(`/admin/users?page=${page}&limit=20`)
-      .then(({ data }) => setPaged(data))
+    adminService
+      .getUsers(page, 20)
+      .then((data) => setPaged(data as PagedUsers))
       .finally(() => setLoading(false));
   }, [page]);
 

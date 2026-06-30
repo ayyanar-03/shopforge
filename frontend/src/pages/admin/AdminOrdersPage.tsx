@@ -1,31 +1,9 @@
 import { useEffect, useState } from 'react';
-import api from '../../api';
+import { orderService } from '../../services/order.service';
+import type { Order, OrderItem, OrderStatus, PagedOrders } from '../../types/order.types';
+import { formatINR } from '../../utils/currency';
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
-type OrderStatus = (typeof STATUSES)[number];
-
-interface OrderItem {
-  id: number;
-  quantity: number;
-  price: number;
-  product: { name: string };
-}
-
-interface OrderRow {
-  id: number;
-  status: OrderStatus;
-  total: number;
-  createdAt: string;
-  user: { name: string; email: string };
-  items: OrderItem[];
-}
-
-interface PagedOrders {
-  data: OrderRow[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
 
 const statusStyle: Record<OrderStatus, string> = {
   pending: 'bg-gray-100 text-gray-600',
@@ -45,16 +23,16 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    api
-      .get<PagedOrders>(`/admin/orders?page=${page}&limit=20`)
-      .then(({ data }) => setPaged(data))
+    orderService
+      .getAdminOrders(page, 20)
+      .then((data) => setPaged(data))
       .finally(() => setLoading(false));
   }, [page]);
 
   const handleStatusChange = async (orderId: number, status: OrderStatus) => {
     setUpdating(orderId);
     try {
-      await api.patch(`/admin/orders/${orderId}/status`, { status });
+      await orderService.updateOrderStatus(orderId, status);
       setPaged((prev) =>
         prev
           ? {
@@ -88,10 +66,10 @@ export default function AdminOrdersPage() {
                     className="flex items-center gap-4 text-left flex-1 hover:opacity-80"
                   >
                     <span className="font-semibold text-gray-900">#{o.id}</span>
-                    <span className="text-sm text-gray-600">{o.user.name}</span>
-                    <span className="text-xs text-gray-400">{o.user.email}</span>
+                    <span className="text-sm text-gray-600">{o.user?.name}</span>
+                    <span className="text-xs text-gray-400">{o.user?.email}</span>
                     <span className="font-bold text-gray-900 ml-auto mr-4">
-                      ${Number(o.total).toFixed(2)}
+                      {formatINR(Number(o.total))}
                     </span>
                     <span className="text-xs text-gray-400">
                       {new Date(o.createdAt).toLocaleDateString()}
@@ -129,7 +107,7 @@ export default function AdminOrdersPage() {
                           <span className="text-gray-400">× {item.quantity}</span>
                         </span>
                         <span className="font-medium text-gray-900">
-                          ${(Number(item.price) * item.quantity).toFixed(2)}
+                          {formatINR(Number(item.price) * item.quantity)}
                         </span>
                       </div>
                     ))}

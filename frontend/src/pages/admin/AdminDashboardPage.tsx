@@ -1,21 +1,16 @@
 import { useEffect, useState } from 'react';
-import api from '../../api';
-
-interface Stats {
-  totalUsers: number;
-  totalProducts: number;
-  totalOrders: number;
-  totalRevenue: number;
-}
+import { adminService } from '../../services/admin.service';
+import type { AdminStats } from '../../types/user.types';
+import { formatINR } from '../../utils/currency';
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get<Stats>('/admin/stats')
-      .then(({ data }) => setStats(data))
+    adminService
+      .getStats()
+      .then((data) => setStats(data))
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,7 +25,7 @@ export default function AdminDashboardPage() {
         { label: 'Total Orders', value: stats.totalOrders, color: 'bg-purple-50 text-purple-700' },
         {
           label: 'Total Revenue',
-          value: `$${stats.totalRevenue.toFixed(2)}`,
+          value: formatINR(stats.totalRevenue),
           color: 'bg-amber-50 text-amber-700',
         },
       ]

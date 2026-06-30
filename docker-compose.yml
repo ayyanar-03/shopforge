@@ -57,7 +57,7 @@ services:
   # ── Application services ────────────────────────────────────────────────────
   catalog-service:
     build:
-      context: ./backend
+      context: ./services/catalog-service
       dockerfile: Dockerfile
     container_name: shopforge-catalog
     restart: unless-stopped
@@ -198,13 +198,29 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
 
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: shopforge-grafana
+    restart: unless-stopped
+    ports:
+      - "4000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-shopforge}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
 volumes:
   mysql_data:
   redis_data:
   prometheus_data:
+  grafana_data:

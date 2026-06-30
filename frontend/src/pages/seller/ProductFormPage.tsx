@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../api';
+import { productService } from '../../services/product.service';
+import type { Product } from '../../types/product.types';
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Toys', 'Food', 'Beauty'];
 
@@ -34,7 +35,7 @@ export default function ProductFormPage() {
 
   useEffect(() => {
     if (!isEdit) return;
-    api.get<ProductData & { id: number }>(`/products/${id}`).then(({ data }) => {
+    productService.getProduct(Number(id)).then((data: Product) => {
       setForm({
         name: data.name,
         description: data.description,
@@ -67,9 +68,9 @@ export default function ProductFormPage() {
     };
     try {
       if (isEdit) {
-        await api.put(`/products/${id}`, payload);
+        await productService.updateProduct(Number(id), payload);
       } else {
-        await api.post('/products', payload);
+        await productService.createProduct(payload);
       }
       navigate('/seller/products');
     } catch (err: unknown) {
@@ -139,7 +140,7 @@ export default function ProductFormPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
             <input
               type="number"
               value={form.price}

@@ -1,33 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import { wishlistService } from '../services/wishlist.service';
+import type { Product } from '../types/product.types';
 import { getProductImage } from '../utils/productImage';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  category: string | null;
-  imageUrl: string | null;
-  averageRating: number;
-  reviewCount: number;
-}
+import { formatINR } from '../utils/currency';
 
 export default function WishlistPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get<Product[]>('/wishlist')
-      .then(({ data }) => setProducts(data))
+    wishlistService
+      .getWishlist()
+      .then((data) => setProducts(data))
       .finally(() => setLoading(false));
   }, []);
 
   const handleRemove = async (productId: number, e: React.MouseEvent) => {
     e.preventDefault();
-    await api.delete(`/wishlist/${productId}`);
+    await wishlistService.removeFromWishlist(productId);
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 
@@ -89,7 +80,7 @@ export default function WishlistPage() {
                   <p className="text-gray-500 text-xs mt-1 line-clamp-2">{product.description}</p>
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-lg font-bold text-gray-900">
-                      ${Number(product.price).toFixed(2)}
+                      {formatINR(Number(product.price))}
                     </span>
                     {product.reviewCount > 0 && (
                       <span className="text-xs text-amber-500">

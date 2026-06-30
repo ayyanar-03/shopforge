@@ -1,24 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../api';
+import { sellerService } from '../../services/seller.service';
+import { productService } from '../../services/product.service';
+import type { Product, PagedProducts } from '../../types/product.types';
 import StarRating from '../../components/StarRating';
-
-interface Product {
-  id: number;
-  name: string;
-  category: string | null;
-  price: number;
-  stock: number;
-  averageRating: number;
-  reviewCount: number;
-}
-
-interface PagedProducts {
-  data: Product[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
+import { formatINR } from '../../utils/currency';
 
 export default function SellerProductsPage() {
   const [paged, setPaged] = useState<PagedProducts | null>(null);
@@ -28,9 +14,9 @@ export default function SellerProductsPage() {
 
   const fetchProducts = (p: number) => {
     setLoading(true);
-    api
-      .get<PagedProducts>(`/seller/products?page=${p}&limit=20`)
-      .then(({ data }) => setPaged(data))
+    sellerService
+      .getProducts(p)
+      .then((data) => setPaged(data))
       .finally(() => setLoading(false));
   };
 
@@ -43,7 +29,7 @@ export default function SellerProductsPage() {
     if (!confirm('Delete this product? This cannot be undone.')) return;
     setDeleting(id);
     try {
-      await api.delete(`/products/${id}`);
+      await productService.deleteProduct(id);
       fetchProducts(page);
     } finally {
       setDeleting(null);
@@ -89,7 +75,7 @@ export default function SellerProductsPage() {
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-5 py-3 font-medium text-gray-900">{p.name}</td>
                     <td className="px-5 py-3 text-gray-500">{p.category ?? '—'}</td>
-                    <td className="px-5 py-3 text-gray-700">${Number(p.price).toFixed(2)}</td>
+                    <td className="px-5 py-3 text-gray-700">{formatINR(Number(p.price))}</td>
                     <td className="px-5 py-3">
                       <span
                         className={`font-medium ${p.stock > 0 ? 'text-green-700' : 'text-red-600'}`}

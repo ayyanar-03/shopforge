@@ -1,37 +1,40 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../api';
+import { productService } from '../services/product.service';
+import { cartService } from '../services/cart.service';
+import { wishlistService } from '../services/wishlist.service';
+import { reviewService } from '../services/review.service';
+import type { Product } from '../types/product.types';
+import type { ReviewsResponse } from '../types/review.types';
 import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImage';
+import { formatINR } from '../utils/currency';
 import StarRating from '../components/StarRating';
 import HeartButton from '../components/HeartButton';
 
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  category: string | null;
-  price: number;
-  stock: number;
-  imageUrl: string | null;
-  averageRating: number;
-  reviewCount: number;
-}
+const CATEGORY_STYLES: Record<string, string> = {
+  Electronics: 'bg-blue-100 text-blue-700 border-blue-200',
+  Clothing: 'bg-pink-100 text-pink-700 border-pink-200',
+  Books: 'bg-amber-100 text-amber-700 border-amber-200',
+  Home: 'bg-teal-100 text-teal-700 border-teal-200',
+  Sports: 'bg-green-100 text-green-700 border-green-200',
+  Toys: 'bg-purple-100 text-purple-700 border-purple-200',
+  Food: 'bg-orange-100 text-orange-700 border-orange-200',
+  Beauty: 'bg-rose-100 text-rose-700 border-rose-200',
+  'Pet Supplies': 'bg-lime-100 text-lime-700 border-lime-200',
+  Garden: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  Music: 'bg-violet-100 text-violet-700 border-violet-200',
+  Baby: 'bg-sky-100 text-sky-700 border-sky-200',
+  Office: 'bg-slate-100 text-slate-700 border-slate-200',
+  Automotive: 'bg-gray-100 text-gray-700 border-gray-200',
+};
 
-interface Review {
-  id: number;
-  rating: number;
-  comment: string | null;
-  createdAt: string;
-  user: { name: string };
-}
-
-interface ReviewsResponse {
-  data: Review[];
-  total: number;
-  averageRating: number;
-  reviewCount: number;
-}
+const CATEGORY_EMOJI: Record<string, string> = {
+  Electronics: '💻', Clothing: '👗', Books: '📚', Home: '🏠',
+  Sports: '⚽', Toys: '🧸', Food: '🍎', Beauty: '💄',
+  'Pet Supplies': '🐾', Garden: '🌱', Music: '🎸', Baby: '👶',
+  Office: '📎', Automotive: '🚗',
+};
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,18 +58,18 @@ export default function ProductDetailPage() {
     setRelated([]);
     setReviews(null);
     setWishlisted(false);
-    api.get<Product>(`/products/${id}`).then(({ data }) => {
+    productService.getProduct(Number(id)).then((data) => {
       setProduct(data);
-      api.get<Product[]>(`/products/${id}/related`).then((r) => setRelated(r.data ?? []));
+      productService.getRelated(Number(id)).then((related) => setRelated(related ?? []));
     });
-    api
-      .get<ReviewsResponse>(`/products/${id}/reviews?limit=20`)
-      .then(({ data }) => setReviews(data));
+    reviewService
+      .getProductReviews(Number(id), 20)
+      .then((data) => setReviews(data));
   }, [id]);
 
   useEffect(() => {
     if (!user || !id) return;
-    api.get<number[]>('/wishlist/ids').then(({ data }) => setWishlisted(data.includes(Number(id))));
+    wishlistService.getWishlist().then((products) => setWishlisted(products.some((p) => p.id === Number(id))));
   }, [user, id]);
 
   const toggleWishlist = async () => {
@@ -75,10 +78,10 @@ export default function ProductDetailPage() {
       return;
     }
     if (wishlisted) {
-      await api.delete(`/wishlist/${id}`);
+      await wishlistService.removeFromWishlist(Number(id));
       setWishlisted(false);
     } else {
-      await api.post(`/wishlist/${id}`);
+      await wishlistService.addToWishlist(Number(id));
       setWishlisted(true);
     }
   };
@@ -90,7 +93,7 @@ export default function ProductDetailPage() {
     }
     setIsAdding(true);
     try {
-      await api.post('/cart', { productId: product!.id, quantity });
+      await cartService.addItem(product!.id, quantity);
       setMessage('Added to cart!');
       setTimeout(() => setMessage(''), 2500);
     } catch (err: unknown) {
@@ -113,13 +116,10 @@ export default function ProductDetailPage() {
     setIsSubmitting(true);
     setReviewError('');
     try {
-      await api.post(`/products/${id}/reviews`, {
-        rating: myRating,
-        comment: myComment || undefined,
-      });
+      await reviewService.createReview(Number(id), myRating, myComment || undefined);
       setMyRating(0);
       setMyComment('');
-      const { data } = await api.get<ReviewsResponse>(`/products/${id}/reviews?limit=20`);
+      const data = await reviewService.getProductReviews(Number(id), 20);
       setReviews(data);
       if (product)
         setProduct({
@@ -142,93 +142,104 @@ export default function ProductDetailPage() {
       </div>
     );
 
+  const categoryStyle = product.category ? (CATEGORY_STYLES[product.category] ?? 'bg-indigo-100 text-indigo-700 border-indigo-200') : '';
+  const categoryEmoji = product.category ? (CATEGORY_EMOJI[product.category] ?? '') : '';
+
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      <Link to="/products" className="text-sm text-blue-600 hover:underline mb-6 inline-block">
+    <div className="max-w-5xl mx-auto px-6 py-8">
+      <Link to="/products" className="text-sm text-indigo-600 hover:underline mb-6 inline-block font-medium">
         ← Back to Products
       </Link>
 
       {/* Product card */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-        <img
-          src={getProductImage(product)}
-          alt={product.name}
-          className="w-full h-64 object-cover rounded-lg mb-6 bg-gray-100"
-        />
-
-        {product.category && (
-          <span className="text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full mb-3 inline-block">
-            {product.category}
-          </span>
-        )}
-
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
-          {user && (
-            <HeartButton wishlisted={wishlisted} onClick={() => void toggleWishlist()} size="md" />
-          )}
-        </div>
-
-        {product.reviewCount > 0 && (
-          <div className="flex items-center gap-2 mb-3">
-            <StarRating value={product.averageRating} size="sm" />
-            <span className="text-sm text-gray-500">
-              {Number(product.averageRating).toFixed(1)} ({product.reviewCount}{' '}
-              {product.reviewCount === 1 ? 'review' : 'reviews'})
-            </span>
-          </div>
-        )}
-
-        <p className="text-gray-600 mb-5">{product.description}</p>
-
-        <div className="flex items-center justify-between mb-6">
-          <span className="text-3xl font-bold text-gray-900">
-            ${Number(product.price).toFixed(2)}
-          </span>
-          <span
-            className={`text-sm font-medium px-3 py-1 rounded-full ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}
-          >
-            {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-          </span>
-        </div>
-
-        {product.stock > 0 && (
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              min={1}
-              max={product.stock}
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+        <div className="grid md:grid-cols-2 gap-0">
+          {/* Left: image */}
+          <div className="relative h-full min-h-64 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+            <img
+              src={getProductImage(product)}
+              alt={product.name}
+              className="w-full h-full object-cover"
             />
-            <button
-              onClick={() => void addToCart()}
-              disabled={isAdding}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-            >
-              {isAdding ? 'Adding...' : 'Add to Cart'}
-            </button>
           </div>
-        )}
 
-        {message && (
-          <p
-            className={`mt-3 text-sm font-medium ${message.includes('Added') ? 'text-green-600' : 'text-red-600'}`}
-          >
-            {message}
-          </p>
-        )}
+          {/* Right: info */}
+          <div className="p-8 flex flex-col">
+            {product.category && (
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border mb-4 inline-flex items-center gap-1 w-fit ${categoryStyle}`}>
+                {categoryEmoji} {product.category}
+              </span>
+            )}
+
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 leading-tight">{product.name}</h1>
+              {user && (
+                <HeartButton wishlisted={wishlisted} onClick={() => void toggleWishlist()} size="md" />
+              )}
+            </div>
+
+            {product.reviewCount > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <StarRating value={product.averageRating} size="sm" />
+                <span className="text-sm text-gray-500">
+                  {Number(product.averageRating).toFixed(1)} ({product.reviewCount}{' '}
+                  {product.reviewCount === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            )}
+
+            <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">{product.description}</p>
+
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-3xl font-extrabold text-indigo-700">
+                {formatINR(Number(product.price))}
+              </span>
+              <span
+                className={`text-sm font-medium px-3 py-1 rounded-full ${product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-100 text-red-600'}`}
+              >
+                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+              </span>
+            </div>
+
+            {product.stock > 0 && (
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={product.stock}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={() => void addToCart()}
+                  disabled={isAdding}
+                  className="flex-1 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm text-sm"
+                >
+                  {isAdding ? 'Adding...' : 'Add to Cart'}
+                </button>
+              </div>
+            )}
+
+            {message && (
+              <p
+                className={`mt-3 text-sm font-medium ${message.includes('Added') ? 'text-emerald-600' : 'text-red-600'}`}
+              >
+                {message}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Reviews */}
-      <div className="mb-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">
           Reviews{reviews && reviews.reviewCount > 0 ? ` (${reviews.reviewCount})` : ''}
         </h2>
 
         {user && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 mb-5">
             <p className="text-sm font-semibold text-gray-700 mb-3">Write a review</p>
             <div className="flex items-center gap-3 mb-3">
               <StarRating value={myRating} onChange={setMyRating} size="lg" />
@@ -243,13 +254,13 @@ export default function ProductDetailPage() {
               onChange={(e) => setMyComment(e.target.value)}
               placeholder="Share your thoughts (optional)"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-3"
+              className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none mb-3 bg-white"
             />
             {reviewError && <p className="text-red-600 text-sm mb-2">{reviewError}</p>}
             <button
               onClick={() => void submitReview()}
               disabled={isSubmitting}
-              className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Review'}
             </button>
@@ -259,10 +270,10 @@ export default function ProductDetailPage() {
         {reviews && reviews.data.length > 0 ? (
           <div className="space-y-3">
             {reviews.data.map((r) => (
-              <div key={r.id} className="bg-white border border-gray-200 rounded-xl px-5 py-4">
+              <div key={r.id} className="bg-gray-50 border border-gray-100 rounded-xl px-5 py-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900 text-sm">{r.user.name}</span>
+                    <span className="font-semibold text-gray-900 text-sm">{r.user.name}</span>
                     <StarRating value={r.rating} size="sm" />
                   </div>
                   <span className="text-xs text-gray-400">
@@ -277,7 +288,7 @@ export default function ProductDetailPage() {
           !user && (
             <p className="text-gray-500 text-sm">
               No reviews yet.{' '}
-              <Link to="/login" className="text-blue-600 hover:underline">
+              <Link to="/login" className="text-indigo-600 hover:underline font-medium">
                 Log in
               </Link>{' '}
               to be the first!
@@ -293,25 +304,29 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {related.map((r) => (
               <Link to={`/products/${r.id}`} key={r.id} className="group block no-underline">
-                <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all duration-150">
-                  <img
-                    src={getProductImage(r)}
-                    alt={r.name}
-                    className="w-full h-20 object-cover rounded-lg mb-3 bg-gray-100"
-                    loading="lazy"
-                  />
-                  <p className="font-medium text-gray-900 text-sm group-hover:text-blue-600 line-clamp-1">
-                    {r.name}
-                  </p>
-                  {r.reviewCount > 0 && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <StarRating value={r.averageRating} size="sm" />
-                      <span className="text-xs text-gray-400">({r.reviewCount})</span>
-                    </div>
-                  )}
-                  <p className="text-gray-700 text-sm font-bold mt-1">
-                    ${Number(r.price).toFixed(2)}
-                  </p>
+                <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg border border-gray-100 hover:border-indigo-200 transition-all duration-200">
+                  <div className="h-24 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                    <img
+                      src={getProductImage(r)}
+                      alt={r.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-3">
+                    <p className="font-semibold text-gray-900 text-sm group-hover:text-indigo-600 line-clamp-1 transition-colors">
+                      {r.name}
+                    </p>
+                    {r.reviewCount > 0 && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <StarRating value={r.averageRating} size="sm" />
+                        <span className="text-xs text-gray-400">({r.reviewCount})</span>
+                      </div>
+                    )}
+                    <p className="text-indigo-700 text-sm font-extrabold mt-1">
+                      {formatINR(Number(r.price))}
+                    </p>
+                  </div>
                 </div>
               </Link>
             ))}

@@ -3,13 +3,27 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import { Queue } from 'bullmq';
 import { Order, OrderStatus, PaymentMethod, PaymentStatus } from './entities/order.entity';
+import { OrderItem } from './entities/order-item.entity';
 import { PlaceOrderDto } from './dto/place-order.dto';
-import { CatalogClientService } from '../catalog-client/catalog-client.service';
+import { CatalogClientService, CartItemDto } from '../catalog-client/catalog-client.service';
 import { PaymentService } from '../payments/payment.service';
 import { NOTIFICATION_QUEUE, INVENTORY_QUEUE, LOW_STOCK_THRESHOLD } from '../queue/queue.module';
+
+interface LineItem {
+  productId: number;
+  quantity: number;
+  price: number;
+}
+
+interface StockUpdate {
+  productId: number;
+  productName: string;
+  newStock: number;
+  sellerId: number;
+}
 
 @Injectable()
 export class OrdersService {
@@ -27,7 +41,6 @@ export class OrdersService {
     const paymentMethod = dto.paymentMethod ?? PaymentMethod.COD;
     const idempotencyKey = dto.idempotencyKey ?? crypto.randomUUID();
 
-    // Idempotency: return existing order on duplicate requests
     const existing = await this.orderRepo.findOne({
       where: { idempotencyKey },
       relations: { items: true },
@@ -37,19 +50,9 @@ export class OrdersService {
     const cartItems = await this.catalog.getCartItems(userId);
     if (!cartItems.length) throw new BadRequestException('Cart is empty');
 
-    for (const item of cartItems) {
-      const product = await this.catalog.getProduct(item.productId);
-      if (!product) throw new NotFoundException(`Product ${item.productId} not found`);
-      if (product.stock < item.quantity)
-        throw new BadRequestException(`Insufficient stock for "${product.name}"`);
-    }
+    this.validateStock(cartItems);
 
-    let subtotal = 0;
-    const orderItems = cartItems.map((item) => {
-      const line = Number(item.product.price) * item.quantity;
-      subtotal += line;
-      return { productId: item.productId, quantity: item.quantity, price: Number(item.product.price) };
-    });
+    const { lineItems, subtotal } = this.buildLineItems(cartItems);
 
     let discount = 0;
     let appliedCode: string | null = null;
@@ -65,17 +68,7 @@ export class OrdersService {
       paymentMethod, total, idempotencyKey,
     );
 
-    // Decrement stock and collect updated stock levels for low-stock checks
-    const stockUpdates: { productId: number; productName: string; newStock: number; sellerId: number }[] = [];
-    for (const item of cartItems) {
-      const updated = await this.catalog.decrementStock(item.productId, item.quantity);
-      stockUpdates.push({
-        productId: updated.id,
-        productName: item.product.name,
-        newStock: updated.stock,
-        sellerId: item.product.sellerId,
-      });
-    }
+    const stockUpdates = await this.decrementAllStock(cartItems);
 
     const order = this.orderRepo.create({
       userId, total, discount, couponCode: appliedCode,
@@ -83,13 +76,57 @@ export class OrdersService {
       paymentMethod,
       paymentStatus: paymentStatus === 'paid' ? PaymentStatus.PAID : PaymentStatus.PENDING,
       paymentId, idempotencyKey,
-      items: orderItems as never,
+      items: lineItems as DeepPartial<OrderItem>[],
     });
     await this.orderRepo.save(order);
 
     await this.catalog.clearCart(userId);
 
-    // Fan out async jobs — failures never block the order response
+    void this.dispatchPostOrderJobs(userId, order, cartItems, stockUpdates);
+
+    return order;
+  }
+
+  private validateStock(cartItems: CartItemDto[]): void {
+    for (const item of cartItems) {
+      if (item.product.stock < item.quantity) {
+        throw new BadRequestException(`Insufficient stock for "${item.product.name}"`);
+      }
+    }
+  }
+
+  private buildLineItems(cartItems: CartItemDto[]): { lineItems: LineItem[]; subtotal: number } {
+    return cartItems.reduce(
+      (acc, item) => {
+        const price = Number(item.product.price);
+        acc.lineItems.push({ productId: item.productId, quantity: item.quantity, price });
+        acc.subtotal += price * item.quantity;
+        return acc;
+      },
+      { lineItems: [] as LineItem[], subtotal: 0 },
+    );
+  }
+
+  private async decrementAllStock(cartItems: CartItemDto[]): Promise<StockUpdate[]> {
+    return Promise.all(
+      cartItems.map(async (item) => {
+        const updated = await this.catalog.decrementStock(item.productId, item.quantity);
+        return {
+          productId: updated.id,
+          productName: item.product.name,
+          newStock: updated.stock,
+          sellerId: item.product.sellerId,
+        };
+      }),
+    );
+  }
+
+  private async dispatchPostOrderJobs(
+    userId: number,
+    order: Order,
+    cartItems: CartItemDto[],
+    stockUpdates: StockUpdate[],
+  ): Promise<void> {
     const user = await this.catalog.getUser(userId);
     if (user) {
       void this.notificationQueue.add('send', {
@@ -98,28 +135,33 @@ export class OrdersService {
           type: 'order_confirmation',
           recipient: { email: user.email, name: user.name },
           data: {
-            orderId: order.id, orderTotal: total,
+            orderId: order.id,
+            orderTotal: order.total,
             items: cartItems.map((i) => ({
-              name: i.product.name, quantity: i.quantity, price: Number(i.product.price),
+              name: i.product.name,
+              quantity: i.quantity,
+              price: Number(i.product.price),
             })),
           },
         },
       });
-
-      for (const { productId, productName, newStock, sellerId } of stockUpdates) {
-        if (newStock < LOW_STOCK_THRESHOLD) {
-          const seller = await this.catalog.getUser(sellerId);
-          if (seller) {
-            void this.inventoryQueue.add('check', {
-              productId, productName, newStock,
-              sellerEmail: seller.email, sellerName: seller.name,
-            });
-          }
-        }
-      }
     }
 
-    return order;
+    const lowStock = stockUpdates.filter((s) => s.newStock < LOW_STOCK_THRESHOLD);
+    if (!lowStock.length) return;
+
+    const sellers = await Promise.all(lowStock.map((s) => this.catalog.getUser(s.sellerId)));
+
+    for (let i = 0; i < lowStock.length; i++) {
+      const seller = sellers[i];
+      if (seller) {
+        void this.inventoryQueue.add('check', {
+          ...lowStock[i],
+          sellerEmail: seller.email,
+          sellerName: seller.name,
+        });
+      }
+    }
   }
 
   async getOrders(userId: number, page: number, limit: number) {

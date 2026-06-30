@@ -1,20 +1,7 @@
 import { useEffect, useState } from 'react';
-import api from '../../api';
-
-interface Product {
-  id: number;
-  name: string;
-  category: string | null;
-  price: number;
-  stock: number;
-}
-
-interface PagedProducts {
-  data: Product[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
+import { productService } from '../../services/product.service';
+import type { Product, PagedProducts } from '../../types/product.types';
+import { formatINR } from '../../utils/currency';
 
 export default function AdminProductsPage() {
   const [paged, setPaged] = useState<PagedProducts | null>(null);
@@ -24,9 +11,9 @@ export default function AdminProductsPage() {
 
   const fetchProducts = (p: number) => {
     setLoading(true);
-    api
-      .get<PagedProducts>(`/products?page=${p}&limit=20`)
-      .then(({ data }) => setPaged(data))
+    productService
+      .getProducts({ page: p, limit: 20 })
+      .then((data) => setPaged(data))
       .finally(() => setLoading(false));
   };
 
@@ -39,7 +26,7 @@ export default function AdminProductsPage() {
     if (!confirm('Delete this product? This cannot be undone.')) return;
     setDeleting(id);
     try {
-      await api.delete(`/products/${id}`);
+      await productService.deleteProduct(id);
       fetchProducts(page);
     } finally {
       setDeleting(null);
@@ -71,7 +58,7 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3 text-gray-400">#{p.id}</td>
                     <td className="px-5 py-3 font-medium text-gray-900">{p.name}</td>
                     <td className="px-5 py-3 text-gray-500">{p.category ?? '—'}</td>
-                    <td className="px-5 py-3 text-gray-700">${Number(p.price).toFixed(2)}</td>
+                    <td className="px-5 py-3 text-gray-700">{formatINR(Number(p.price))}</td>
                     <td className="px-5 py-3">
                       <span
                         className={`font-medium ${p.stock > 0 ? 'text-green-700' : 'text-red-600'}`}

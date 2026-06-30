@@ -9,6 +9,7 @@ import { CatalogClientModule } from '../catalog-client/catalog-client.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { AuthModule } from '../auth/auth.module';
 import { NOTIFICATION_QUEUE, INVENTORY_QUEUE } from '../queue/queue.module';
+import { ORDERS_SERVICE } from './orders.service.interface';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { NOTIFICATION_QUEUE, INVENTORY_QUEUE } from '../queue/queue.module';
     AuthModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService],
-  exports: [OrdersService],
+  providers: [{ provide: ORDERS_SERVICE, useClass: OrdersService }],
+  exports: [ORDERS_SERVICE],
 })
 export class OrdersModule {}

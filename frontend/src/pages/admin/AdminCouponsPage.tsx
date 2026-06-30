@@ -1,18 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import api from '../../api';
-
-interface Coupon {
-  id: number;
-  code: string;
-  type: 'percentage' | 'fixed';
-  value: number;
-  minOrderAmount: number | null;
-  maxUses: number | null;
-  usedCount: number;
-  expiresAt: string | null;
-  active: boolean;
-  createdAt: string;
-}
+import { couponService } from '../../services/coupon.service';
+import type { Coupon, CreateCouponPayload } from '../../types/coupon.types';
 
 interface CouponForm {
   code: string;
@@ -41,7 +29,7 @@ export default function AdminCouponsPage() {
   const [showForm, setShowForm] = useState(false);
 
   const fetchCoupons = () => {
-    api.get<Coupon[]>('/admin/coupons').then(({ data }) => {
+    couponService.getCoupons().then((data) => {
       setCoupons(data);
       setLoading(false);
     });
@@ -56,14 +44,15 @@ export default function AdminCouponsPage() {
     setSaving(true);
     setFormError('');
     try {
-      await api.post('/admin/coupons', {
+      const payload: CreateCouponPayload = {
         code: form.code,
         type: form.type,
         value: parseFloat(form.value),
         minOrderAmount: form.minOrderAmount ? parseFloat(form.minOrderAmount) : undefined,
         maxUses: form.maxUses ? parseInt(form.maxUses, 10) : undefined,
         expiresAt: form.expiresAt || undefined,
-      });
+      };
+      await couponService.createCoupon(payload);
       setForm(EMPTY);
       setShowForm(false);
       fetchCoupons();
@@ -77,13 +66,13 @@ export default function AdminCouponsPage() {
   };
 
   const handleToggle = async (id: number) => {
-    await api.patch(`/admin/coupons/${id}/toggle`);
+    await couponService.toggleCoupon(id);
     fetchCoupons();
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this coupon?')) return;
-    await api.delete(`/admin/coupons/${id}`);
+    await couponService.deleteCoupon(id);
     fetchCoupons();
   };
 
@@ -219,10 +208,10 @@ export default function AdminCouponsPage() {
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono font-semibold text-gray-900">{c.code}</td>
                   <td className="px-4 py-3 text-gray-700">
-                    {c.type === 'percentage' ? `${c.value}%` : `$${Number(c.value).toFixed(2)}`} off
+                    {c.type === 'percentage' ? `${c.value}%` : `₹${Math.round(Number(c.value) * 83.5).toLocaleString('en-IN')}`} off
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {c.minOrderAmount ? `$${Number(c.minOrderAmount).toFixed(2)}` : '—'}
+                    {c.minOrderAmount ? `₹${Math.round(Number(c.minOrderAmount) * 83.5).toLocaleString('en-IN')}` : '—'}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {c.usedCount}

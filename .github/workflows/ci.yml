@@ -17,11 +17,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: services/catalog-service/package-lock.json
       - run: npm install
-        working-directory: backend
+        working-directory: services/catalog-service
       - run: npx eslint src --max-warnings=0
-        working-directory: backend
+        working-directory: services/catalog-service
 
   catalog-test:
     name: Test catalog-service
@@ -32,22 +32,26 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: services/catalog-service/package-lock.json
       - run: npm install
-        working-directory: backend
+        working-directory: services/catalog-service
       - run: npm test -- --passWithNoTests --forceExit
-        working-directory: backend
+        working-directory: services/catalog-service
 
-  # ── Order-service: build (TypeScript compile validates correctness) ─────────
+  # ── Order-service: lint + test + build ───────────────────────────────────────
   order-build:
-    name: Build order-service
+    name: Build & test order-service
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/order-service/package-lock.json
       - run: npm install
+        working-directory: services/order-service
+      - run: npm test -- --passWithNoTests --forceExit
         working-directory: services/order-service
       - run: npm run build
         working-directory: services/order-service
@@ -143,7 +147,7 @@ jobs:
       - name: Build and push catalog-service
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ./services/catalog-service
           push: true
           tags: ghcr.io/${{ github.repository }}/catalog-service:latest
           cache-from: type=gha,scope=catalog

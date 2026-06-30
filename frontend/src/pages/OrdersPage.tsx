@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import api from '../api';
+import { orderService } from '../services/order.service';
+import type { Order, OrderItem } from '../types/order.types';
+import { formatINR } from '../utils/currency';
 
 const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-gray-100 text-gray-600',
@@ -17,29 +19,14 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-interface OrderItem {
-  id: number;
-  quantity: number;
-  price: number;
-  product: { name: string };
-}
-
-interface Order {
-  id: number;
-  total: number;
-  status: string;
-  createdAt: string;
-  items: OrderItem[];
-}
-
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get('/orders')
-      .then(({ data }) => setOrders(Array.isArray(data) ? data : (data.data ?? [])))
+    orderService
+      .getOrders()
+      .then((data) => setOrders(data))
       .finally(() => setLoading(false));
   }, []);
 
@@ -89,7 +76,7 @@ export default function OrdersPage() {
                       {item.product.name} <span className="text-gray-400">× {item.quantity}</span>
                     </span>
                     <span className="font-medium text-gray-900">
-                      ${(Number(item.price) * item.quantity).toFixed(2)}
+                      {formatINR(Number(item.price) * item.quantity)}
                     </span>
                   </div>
                 ))}
@@ -97,7 +84,7 @@ export default function OrdersPage() {
 
               <div className="flex justify-end px-5 py-3 border-t border-gray-100">
                 <span className="text-sm text-gray-500 mr-2">Total</span>
-                <span className="font-bold text-gray-900">${Number(order.total).toFixed(2)}</span>
+                <span className="font-bold text-gray-900">{formatINR(Number(order.total))}</span>
               </div>
             </div>
           ))}
