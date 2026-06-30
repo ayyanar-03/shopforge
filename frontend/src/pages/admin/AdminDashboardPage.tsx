@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api';
+import { formatINR } from '../../utils/currency';
 
 interface Stats {
   totalUsers: number;
@@ -30,7 +31,7 @@ export default function AdminDashboardPage() {
         { label: 'Total Orders', value: stats.totalOrders, color: 'bg-purple-50 text-purple-700' },
         {
           label: 'Total Revenue',
-          value: `$${stats.totalRevenue.toFixed(2)}`,
+          value: formatINR(stats.totalRevenue),
           color: 'bg-amber-50 text-amber-700',
         },
       ]

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { formatINR } from '../utils/currency';
 
 interface CartItem {
   id: number;
@@ -125,12 +126,12 @@ export default function CartPage() {
                 <div>
                   <p className="font-medium text-gray-900">{item.product.name}</p>
                   <p className="text-sm text-gray-500">
-                    ${Number(item.product.price).toFixed(2)} × {item.quantity}
+                    {formatINR(Number(item.product.price))} × {item.quantity}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-gray-900">
-                    ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                    {formatINR(Number(item.product.price) * item.quantity)}
                   </span>
                   <button
                     onClick={() => void removeItem(item.id)}
@@ -150,7 +151,7 @@ export default function CartPage() {
                 <div>
                   <span className="text-sm font-semibold text-green-700">{coupon.code}</span>
                   <span className="ml-2 text-sm text-green-600">
-                    −${coupon.discountAmount.toFixed(2)}
+                    −{formatINR(coupon.discountAmount)}
                     {coupon.type === 'percentage' ? ` (${coupon.value}% off)` : ' off'}
                   </span>
                 </div>
@@ -210,19 +211,19 @@ export default function CartPage() {
             {coupon && (
               <div className="flex justify-between text-sm text-gray-500 mb-1">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatINR(subtotal)}</span>
               </div>
             )}
             {coupon && (
               <div className="flex justify-between text-sm text-green-600 mb-2">
                 <span>Discount ({coupon.code})</span>
-                <span>−${coupon.discountAmount.toFixed(2)}</span>
+                <span>−{formatINR(coupon.discountAmount)}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total</p>
-                <p className="text-xl font-bold text-gray-900">${total.toFixed(2)}</p>
+                <p className="text-xl font-bold text-gray-900">{formatINR(total)}</p>
               </div>
               <button
                 onClick={() => void checkout()}

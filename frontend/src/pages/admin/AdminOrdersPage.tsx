@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api';
+import { formatINR } from '../../utils/currency';
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 type OrderStatus = (typeof STATUSES)[number];
@@ -91,7 +92,7 @@ export default function AdminOrdersPage() {
                     <span className="text-sm text-gray-600">{o.user.name}</span>
                     <span className="text-xs text-gray-400">{o.user.email}</span>
                     <span className="font-bold text-gray-900 ml-auto mr-4">
-                      ${Number(o.total).toFixed(2)}
+                      {formatINR(Number(o.total))}
                     </span>
                     <span className="text-xs text-gray-400">
                       {new Date(o.createdAt).toLocaleDateString()}
@@ -129,7 +130,7 @@ export default function AdminOrdersPage() {
                           <span className="text-gray-400">× {item.quantity}</span>
                         </span>
                         <span className="font-medium text-gray-900">
-                          ${(Number(item.price) * item.quantity).toFixed(2)}
+                          {formatINR(Number(item.price) * item.quantity)}
                         </span>
                       </div>
                     ))}

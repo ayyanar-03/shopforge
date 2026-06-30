@@ -29,7 +29,7 @@ import { OrderItem } from './orders/entities/order-item.entity';
       password: process.env.DB_PASSWORD || 'shopforge_pass',
       database: process.env.DB_NAME || 'shopforge',
       entities: [Order, OrderItem],
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
     BullModule.forRoot({
       connection: {

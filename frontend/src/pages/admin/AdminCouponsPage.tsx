@@ -219,10 +219,10 @@ export default function AdminCouponsPage() {
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono font-semibold text-gray-900">{c.code}</td>
                   <td className="px-4 py-3 text-gray-700">
-                    {c.type === 'percentage' ? `${c.value}%` : `$${Number(c.value).toFixed(2)}`} off
+                    {c.type === 'percentage' ? `${c.value}%` : `₹${Math.round(Number(c.value) * 83.5).toLocaleString('en-IN')}`} off
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {c.minOrderAmount ? `$${Number(c.minOrderAmount).toFixed(2)}` : '—'}
+                    {c.minOrderAmount ? `₹${Math.round(Number(c.minOrderAmount) * 83.5).toLocaleString('en-IN')}` : '—'}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {c.usedCount}

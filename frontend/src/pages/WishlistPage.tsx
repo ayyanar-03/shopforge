@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { getProductImage } from '../utils/productImage';
+import { formatINR } from '../utils/currency';
 
 interface Product {
   id: number;
@@ -89,7 +90,7 @@ export default function WishlistPage() {
                   <p className="text-gray-500 text-xs mt-1 line-clamp-2">{product.description}</p>
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-lg font-bold text-gray-900">
-                      ${Number(product.price).toFixed(2)}
+                      {formatINR(Number(product.price))}
                     </span>
                     {product.reviewCount > 0 && (
                       <span className="text-xs text-amber-500">

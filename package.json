@@ -1,4 +1,14 @@
 {
+  "name": "@shopforge/root",
+  "private": true,
+  "description": "ShopForge monorepo root — run services individually via their own package.json",
+  "scripts": {
+    "catalog": "npm --prefix backend run start:dev",
+    "order": "npm --prefix services/order-service run start:dev",
+    "notification": "npm --prefix services/notification-service run start:dev",
+    "gateway": "npm --prefix gateway run start:dev",
+    "frontend": "npm --prefix frontend run dev"
+  },
   "devDependencies": {
     "autocannon": "^8.0.0"
   }

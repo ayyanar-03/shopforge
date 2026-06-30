@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api';
+import { formatINR } from '../../utils/currency';
 
 interface Product {
   id: number;
@@ -71,7 +72,7 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3 text-gray-400">#{p.id}</td>
                     <td className="px-5 py-3 font-medium text-gray-900">{p.name}</td>
                     <td className="px-5 py-3 text-gray-500">{p.category ?? '—'}</td>
-                    <td className="px-5 py-3 text-gray-700">${Number(p.price).toFixed(2)}</td>
+                    <td className="px-5 py-3 text-gray-700">{formatINR(Number(p.price))}</td>
                     <td className="px-5 py-3">
                       <span
                         className={`font-medium ${p.stock > 0 ? 'text-green-700' : 'text-red-600'}`}

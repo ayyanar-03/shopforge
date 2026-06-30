@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import { formatINR } from '../utils/currency';
 
 const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-gray-100 text-gray-600',
@@ -89,7 +90,7 @@ export default function OrdersPage() {
                       {item.product.name} <span className="text-gray-400">× {item.quantity}</span>
                     </span>
                     <span className="font-medium text-gray-900">
-                      ${(Number(item.price) * item.quantity).toFixed(2)}
+                      {formatINR(Number(item.price) * item.quantity)}
                     </span>
                   </div>
                 ))}
@@ -97,7 +98,7 @@ export default function OrdersPage() {
 
               <div className="flex justify-end px-5 py-3 border-t border-gray-100">
                 <span className="text-sm text-gray-500 mr-2">Total</span>
-                <span className="font-bold text-gray-900">${Number(order.total).toFixed(2)}</span>
+                <span className="font-bold text-gray-900">{formatINR(Number(order.total))}</span>
               </div>
             </div>
           ))}

@@ -6,8 +6,12 @@ import { UsersModule } from '../users/users.module';
 import { CouponsModule } from '../coupons/coupons.module';
 import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
-import { InternalController } from './internal.controller';
 import { InternalGuard } from './internal.guard';
+import { InternalStatsController } from './controllers/internal-stats.controller';
+import { InternalCartController } from './controllers/internal-cart.controller';
+import { InternalProductsController } from './controllers/internal-products.controller';
+import { InternalUsersController } from './controllers/internal-users.controller';
+import { InternalCouponsController } from './controllers/internal-coupons.controller';
 
 @Module({
   imports: [
@@ -17,7 +21,13 @@ import { InternalGuard } from './internal.guard';
     UsersModule,
     CouponsModule,
   ],
-  controllers: [InternalController],
+  controllers: [
+    InternalStatsController,
+    InternalCartController,
+    InternalProductsController,
+    InternalUsersController,
+    InternalCouponsController,
+  ],
   providers: [InternalGuard],
 })
 export class InternalModule {}

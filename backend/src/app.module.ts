@@ -36,7 +36,7 @@ import { MetricsModule } from './metrics/metrics.module';
       password: process.env.DB_PASSWORD || 'shopforge_pass',
       database: process.env.DB_NAME || 'shopforge',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     MetricsModule,
