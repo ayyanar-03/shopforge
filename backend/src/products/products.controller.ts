@@ -10,9 +10,11 @@ import {
   ParseIntPipe,
   UseGuards,
   Request,
+  Inject,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
-import { ProductsService } from './products.service';
+import { PRODUCTS_SERVICE } from './products.service.interface';
+import type { IProductsService } from './products.service.interface';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchDto } from './dto/search.dto';
@@ -25,7 +27,7 @@ import type { AuthenticatedRequest } from '../common/types/authenticated-request
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(@Inject(PRODUCTS_SERVICE) private readonly productsService: IProductsService) {}
 
   @Get()
   @SkipThrottle()

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/auth.service';
 
 interface ProfileData {
   id: number;
@@ -29,10 +29,10 @@ export default function ProfilePage() {
   const [pwError, setPwError] = useState('');
 
   useEffect(() => {
-    api
-      .get<ProfileData>('/auth/me')
-      .then(({ data }) => {
-        setProfile(data);
+    authService
+      .getProfile()
+      .then((data) => {
+        setProfile(data as ProfileData);
         setName(data.name);
       })
       .finally(() => setLoading(false));
@@ -43,10 +43,7 @@ export default function ProfilePage() {
     setSavingName(true);
     setNameMsg('');
     try {
-      const { data } = await api.patch<{ id: number; name: string; email: string; role: string }>(
-        '/auth/me',
-        { name },
-      );
+      const data = await authService.updateProfile({ name });
       setProfile((p) => (p ? { ...p, name: data.name } : p));
       // Update auth context so navbar shows new name
       if (authUser) login({ ...authUser, name: data.name }, token ?? '');
@@ -69,7 +66,7 @@ export default function ProfilePage() {
     }
     setSavingPw(true);
     try {
-      await api.patch('/auth/me/password', { currentPassword, newPassword });
+      await authService.changePassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

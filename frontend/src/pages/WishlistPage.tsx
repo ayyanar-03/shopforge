@@ -1,34 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import { wishlistService } from '../services/wishlist.service';
+import type { Product } from '../types/product.types';
 import { getProductImage } from '../utils/productImage';
 import { formatINR } from '../utils/currency';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  category: string | null;
-  imageUrl: string | null;
-  averageRating: number;
-  reviewCount: number;
-}
 
 export default function WishlistPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get<Product[]>('/wishlist')
-      .then(({ data }) => setProducts(data))
+    wishlistService
+      .getWishlist()
+      .then((data) => setProducts(data))
       .finally(() => setLoading(false));
   }, []);
 
   const handleRemove = async (productId: number, e: React.MouseEvent) => {
     e.preventDefault();
-    await api.delete(`/wishlist/${productId}`);
+    await wishlistService.removeFromWishlist(productId);
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 

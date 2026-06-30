@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import api from '../api';
+import { orderService } from '../services/order.service';
+import type { Order, OrderItem } from '../types/order.types';
 import { formatINR } from '../utils/currency';
 
 const STATUS_STYLE: Record<string, string> = {
@@ -18,29 +19,14 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-interface OrderItem {
-  id: number;
-  quantity: number;
-  price: number;
-  product: { name: string };
-}
-
-interface Order {
-  id: number;
-  total: number;
-  status: string;
-  createdAt: string;
-  items: OrderItem[];
-}
-
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get('/orders')
-      .then(({ data }) => setOrders(Array.isArray(data) ? data : (data.data ?? [])))
+    orderService
+      .getOrders()
+      .then((data) => setOrders(data))
       .finally(() => setLoading(false));
   }, []);
 

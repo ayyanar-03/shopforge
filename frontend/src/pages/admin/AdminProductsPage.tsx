@@ -1,21 +1,7 @@
 import { useEffect, useState } from 'react';
-import api from '../../api';
+import { productService } from '../../services/product.service';
+import type { Product, PagedProducts } from '../../types/product.types';
 import { formatINR } from '../../utils/currency';
-
-interface Product {
-  id: number;
-  name: string;
-  category: string | null;
-  price: number;
-  stock: number;
-}
-
-interface PagedProducts {
-  data: Product[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
 
 export default function AdminProductsPage() {
   const [paged, setPaged] = useState<PagedProducts | null>(null);
@@ -25,9 +11,9 @@ export default function AdminProductsPage() {
 
   const fetchProducts = (p: number) => {
     setLoading(true);
-    api
-      .get<PagedProducts>(`/products?page=${p}&limit=20`)
-      .then(({ data }) => setPaged(data))
+    productService
+      .getProducts({ page: p, limit: 20 })
+      .then((data) => setPaged(data))
       .finally(() => setLoading(false));
   };
 
@@ -40,7 +26,7 @@ export default function AdminProductsPage() {
     if (!confirm('Delete this product? This cannot be undone.')) return;
     setDeleting(id);
     try {
-      await api.delete(`/products/${id}`);
+      await productService.deleteProduct(id);
       fetchProducts(page);
     } finally {
       setDeleting(null);

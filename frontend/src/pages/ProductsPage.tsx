@@ -1,23 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import api from '../api';
+import { productService } from '../services/product.service';
+import { wishlistService } from '../services/wishlist.service';
+import type { Product, ProductSearchParams } from '../types/product.types';
 import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImage';
 import { formatINR, inrToUsd } from '../utils/currency';
 import StarRating from '../components/StarRating';
 import HeartButton from '../components/HeartButton';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string | null;
-  category: string | null;
-  price: number;
-  stock: number;
-  imageUrl: string | null;
-  averageRating: number;
-  reviewCount: number;
-}
 
 const CATEGORIES = [
   'Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Toys', 'Food', 'Beauty',
@@ -103,26 +93,25 @@ export default function ProductsPage() {
       setWishlistIds(new Set());
       return;
     }
-    api.get<number[]>('/wishlist/ids').then(({ data }) => setWishlistIds(new Set(data)));
+    wishlistService.getWishlist().then((products) => setWishlistIds(new Set(products.map((p) => p.id))));
   }, [user]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams();
-      if (debouncedQuery) params.set('q', debouncedQuery);
-      if (category) params.set('category', category);
-      if (minPrice) params.set('minPrice', String(inrToUsd(Number(minPrice))));
-      if (maxPrice) params.set('maxPrice', String(inrToUsd(Number(maxPrice))));
-      params.set('sortBy', sortBy);
-      params.set('sortOrder', sortOrder);
-      params.set('page', String(page));
-      params.set('limit', String(PAGE_SIZE));
+      const searchParams: Record<string, string | number> = {
+        sortBy,
+        sortOrder,
+        page,
+        limit: PAGE_SIZE,
+      };
+      if (debouncedQuery) searchParams.q = debouncedQuery;
+      if (category) searchParams.category = category;
+      if (minPrice) searchParams.minPrice = inrToUsd(Number(minPrice));
+      if (maxPrice) searchParams.maxPrice = inrToUsd(Number(maxPrice));
 
-      const { data } = await api.get<{ data: Product[]; total: number; totalPages: number }>(
-        `/products/search?${params}`,
-      );
+      const data = await productService.searchProducts(searchParams as ProductSearchParams);
       setProducts(data.data ?? []);
       setTotal(data.total ?? 0);
       setTotalPages(data.totalPages ?? 1);
@@ -167,14 +156,14 @@ export default function ProductsPage() {
     e.stopPropagation();
     if (!user) return;
     if (wishlistIds.has(productId)) {
-      await api.delete(`/wishlist/${productId}`);
+      await wishlistService.removeFromWishlist(productId);
       setWishlistIds((prev) => {
         const next = new Set(prev);
         next.delete(productId);
         return next;
       });
     } else {
-      await api.post(`/wishlist/${productId}`);
+      await wishlistService.addToWishlist(productId);
       setWishlistIds((prev) => new Set(prev).add(productId));
     }
   };

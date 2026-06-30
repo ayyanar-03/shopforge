@@ -1,38 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../api';
+import { productService } from '../services/product.service';
+import { cartService } from '../services/cart.service';
+import { wishlistService } from '../services/wishlist.service';
+import { reviewService } from '../services/review.service';
+import type { Product } from '../types/product.types';
+import type { ReviewsResponse } from '../types/review.types';
 import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImage';
 import { formatINR } from '../utils/currency';
 import StarRating from '../components/StarRating';
 import HeartButton from '../components/HeartButton';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  category: string | null;
-  price: number;
-  stock: number;
-  imageUrl: string | null;
-  averageRating: number;
-  reviewCount: number;
-}
-
-interface Review {
-  id: number;
-  rating: number;
-  comment: string | null;
-  createdAt: string;
-  user: { name: string };
-}
-
-interface ReviewsResponse {
-  data: Review[];
-  total: number;
-  averageRating: number;
-  reviewCount: number;
-}
 
 const CATEGORY_STYLES: Record<string, string> = {
   Electronics: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -80,18 +58,18 @@ export default function ProductDetailPage() {
     setRelated([]);
     setReviews(null);
     setWishlisted(false);
-    api.get<Product>(`/products/${id}`).then(({ data }) => {
+    productService.getProduct(Number(id)).then((data) => {
       setProduct(data);
-      api.get<Product[]>(`/products/${id}/related`).then((r) => setRelated(r.data ?? []));
+      productService.getRelated(Number(id)).then((related) => setRelated(related ?? []));
     });
-    api
-      .get<ReviewsResponse>(`/products/${id}/reviews?limit=20`)
-      .then(({ data }) => setReviews(data));
+    reviewService
+      .getProductReviews(Number(id), 20)
+      .then((data) => setReviews(data));
   }, [id]);
 
   useEffect(() => {
     if (!user || !id) return;
-    api.get<number[]>('/wishlist/ids').then(({ data }) => setWishlisted(data.includes(Number(id))));
+    wishlistService.getWishlist().then((products) => setWishlisted(products.some((p) => p.id === Number(id))));
   }, [user, id]);
 
   const toggleWishlist = async () => {
@@ -100,10 +78,10 @@ export default function ProductDetailPage() {
       return;
     }
     if (wishlisted) {
-      await api.delete(`/wishlist/${id}`);
+      await wishlistService.removeFromWishlist(Number(id));
       setWishlisted(false);
     } else {
-      await api.post(`/wishlist/${id}`);
+      await wishlistService.addToWishlist(Number(id));
       setWishlisted(true);
     }
   };
@@ -115,7 +93,7 @@ export default function ProductDetailPage() {
     }
     setIsAdding(true);
     try {
-      await api.post('/cart', { productId: product!.id, quantity });
+      await cartService.addItem(product!.id, quantity);
       setMessage('Added to cart!');
       setTimeout(() => setMessage(''), 2500);
     } catch (err: unknown) {
@@ -138,13 +116,10 @@ export default function ProductDetailPage() {
     setIsSubmitting(true);
     setReviewError('');
     try {
-      await api.post(`/products/${id}/reviews`, {
-        rating: myRating,
-        comment: myComment || undefined,
-      });
+      await reviewService.createReview(Number(id), myRating, myComment || undefined);
       setMyRating(0);
       setMyComment('');
-      const { data } = await api.get<ReviewsResponse>(`/products/${id}/reviews?limit=20`);
+      const data = await reviewService.getProductReviews(Number(id), 20);
       setReviews(data);
       if (product)
         setProduct({

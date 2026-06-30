@@ -8,6 +8,7 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { TypeOrmUserRepository } from './repositories/user.repository';
 import { USER_REPOSITORY } from './repositories/user.repository.interface';
+import { USERS_SERVICE } from './users.service.interface';
 import { JwtStrategy } from '../auth/jwt.strategy';
 
 @Module({
@@ -21,11 +22,12 @@ import { JwtStrategy } from '../auth/jwt.strategy';
   ],
   controllers: [UsersController],
   providers: [
-    UsersService,
+    { provide: USERS_SERVICE, useClass: UsersService },
     JwtStrategy,
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
   ],
   exports: [
+    USERS_SERVICE,
     JwtModule,
     PassportModule,
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },

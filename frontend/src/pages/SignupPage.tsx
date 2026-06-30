@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
-import api from '../api';
+import { authService } from '../services/auth.service';
 import { useAuth } from '../context/AuthContext';
 
 export default function SignupPage() {
@@ -19,10 +19,7 @@ export default function SignupPage() {
     setError('');
     setIsSubmitting(true);
     try {
-      const { data } = await api.post<{
-        user: { id: number; name: string; email: string; role: string };
-        accessToken: string;
-      }>('/auth/signup', { name, email, password });
+      const data = await authService.signup(name, email, password);
       login(data.user, data.accessToken);
       navigate('/products');
     } catch (err: unknown) {

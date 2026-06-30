@@ -1,22 +1,16 @@
 import { useEffect, useState } from 'react';
-import api from '../../api';
+import { adminService } from '../../services/admin.service';
+import type { AdminStats } from '../../types/user.types';
 import { formatINR } from '../../utils/currency';
 
-interface Stats {
-  totalUsers: number;
-  totalProducts: number;
-  totalOrders: number;
-  totalRevenue: number;
-}
-
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get<Stats>('/admin/stats')
-      .then(({ data }) => setStats(data))
+    adminService
+      .getStats()
+      .then((data) => setStats(data))
       .finally(() => setLoading(false));
   }, []);
 

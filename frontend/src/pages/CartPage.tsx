@@ -1,23 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import { cartService } from '../services/cart.service';
+import type { CartItem, CouponResult, PaymentMethod } from '../types/cart.types';
 import { formatINR } from '../utils/currency';
-
-interface CartItem {
-  id: number;
-  quantity: number;
-  product: { id: number; name: string; price: number };
-}
-
-interface CouponResult {
-  code: string;
-  type: 'percentage' | 'fixed';
-  value: number;
-  discountAmount: number;
-  finalTotal: number;
-}
-
-type PaymentMethod = 'cod' | 'stripe' | 'razorpay';
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cod: 'Cash on Delivery',
@@ -39,7 +24,7 @@ export default function CartPage() {
   const navigate = useNavigate();
 
   const fetchCart = async () => {
-    const { data } = await api.get<CartItem[]>('/cart');
+    const data = await cartService.getCart();
     setItems(data);
     setLoading(false);
   };
@@ -57,10 +42,7 @@ export default function CartPage() {
     setCouponError('');
     setCoupon(null);
     try {
-      const { data } = await api.post<CouponResult>('/coupons/validate', {
-        code: couponInput.trim(),
-        total: subtotal,
-      });
+      const data = await cartService.validateCoupon(couponInput.trim(), subtotal);
       setCoupon(data);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -77,7 +59,7 @@ export default function CartPage() {
   };
 
   const removeItem = async (id: number) => {
-    await api.delete(`/cart/${id}`);
+    await cartService.removeItem(id);
     if (coupon) removeCoupon();
     void fetchCart();
   };
@@ -85,7 +67,7 @@ export default function CartPage() {
   const checkout = async () => {
     setCheckingOut(true);
     try {
-      await api.post('/orders', {
+      await cartService.checkout({
         paymentMethod,
         idempotencyKey,
         ...(coupon ? { couponCode: coupon.code } : {}),

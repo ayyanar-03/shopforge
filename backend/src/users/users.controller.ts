@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, UseGuards, Request, Inject } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Throttle } from '@nestjs/throttler';
-import { UsersService } from './users.service';
+import { USERS_SERVICE } from './users.service.interface';
+import type { IUsersService } from './users.service.interface';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -12,7 +13,7 @@ import type { AuthenticatedRequest } from '../common/types/authenticated-request
 
 @Controller('auth')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(@Inject(USERS_SERVICE) private readonly usersService: IUsersService) {}
 
   @Post('signup')
   @Throttle({ default: { limit: 5, ttl: 60000 } })

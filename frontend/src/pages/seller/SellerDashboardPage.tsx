@@ -1,22 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../api';
 import StarRating from '../../components/StarRating';
+import { sellerService } from '../../services/seller.service';
 
-interface Stats {
-  totalProducts: number;
-  totalReviews: number;
-  averageRating: number;
-}
+type SellerStats = Awaited<ReturnType<typeof sellerService.getStats>>;
 
 export default function SellerDashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<SellerStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get<Stats>('/seller/stats')
-      .then(({ data }) => setStats(data))
+    sellerService
+      .getStats()
+      .then((data) => setStats(data))
       .finally(() => setLoading(false));
   }, []);
 
