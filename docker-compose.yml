@@ -57,7 +57,7 @@ services:
   # ── Application services ────────────────────────────────────────────────────
   catalog-service:
     build:
-      context: ./backend
+      context: ./services/catalog-service
       dockerfile: Dockerfile
     container_name: shopforge-catalog
     restart: unless-stopped
