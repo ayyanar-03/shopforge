@@ -1,14 +1,12 @@
 import {
-  Controller, Get, Patch, Query, Param, Body, ParseIntPipe, UseGuards,
+  Controller, Get, Patch, Query, Param, Body, ParseIntPipe, UseGuards, Inject,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Order, OrderStatus } from '../orders/entities/order.entity';
+import { SetMetadata } from '@nestjs/common';
+import { IsEnum } from 'class-validator';
+import { OrderStatus } from '../orders/entities/order.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, ROLES_KEY } from '../auth/roles.guard';
-import { SetMetadata } from '@nestjs/common';
-import { CatalogClientService } from '../catalog-client/catalog-client.service';
-import { IsEnum } from 'class-validator';
+import { ADMIN_ORDERS_SERVICE, type IAdminOrdersService } from './admin-orders.service.interface';
 
 class UpdateStatusDto {
   @IsEnum(OrderStatus) status!: OrderStatus;
@@ -19,48 +17,27 @@ class UpdateStatusDto {
 @SetMetadata(ROLES_KEY, ['admin'])
 export class AdminOrdersController {
   constructor(
-    @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
-    private readonly catalog: CatalogClientService,
+    @Inject(ADMIN_ORDERS_SERVICE) private readonly adminOrdersService: IAdminOrdersService,
   ) {}
 
   @Get('stats')
-  async getStats() {
-    const [orderStats, catalogStats] = await Promise.all([
-      this.orderRepo
-        .createQueryBuilder('o')
-        .select(['COUNT(*) AS totalOrders', 'COALESCE(SUM(o.total), 0) AS totalRevenue'])
-        .getRawOne<{ totalOrders: string; totalRevenue: string }>(),
-      this.catalog.getCatalogStats(),
-    ]);
-    return {
-      ...catalogStats,
-      totalOrders: parseInt(orderStats?.totalOrders ?? '0', 10),
-      totalRevenue: parseFloat(orderStats?.totalRevenue ?? '0'),
-    };
+  getStats() {
+    return this.adminOrdersService.getStats();
   }
 
   @Get('orders')
-  async getOrders(
+  getOrders(
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
     @Query('limit', new ParseIntPipe({ optional: true })) limit = 10,
   ) {
-    const [data, total] = await this.orderRepo.findAndCount({
-      relations: { items: true },
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return this.adminOrdersService.getOrders(page, limit);
   }
 
   @Patch('orders/:id/status')
-  async updateStatus(
+  updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateStatusDto,
   ) {
-    const order = await this.orderRepo.findOneBy({ id });
-    if (!order) return { error: 'Order not found' };
-    order.status = dto.status;
-    return this.orderRepo.save(order);
+    return this.adminOrdersService.updateStatus(id, dto.status);
   }
 }
