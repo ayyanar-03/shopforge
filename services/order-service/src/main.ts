@@ -2,11 +2,13 @@ import './tracer';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, RequestMethod, VersioningType } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
+  app.use(helmet());
   app.setGlobalPrefix('api', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
