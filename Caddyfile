@@ -1,0 +1,10 @@
+# Production TLS — set SHOPFORGE_DOMAIN env var before running
+# Usage: SHOPFORGE_DOMAIN=mysite.com docker compose --profile production up -d
+
+{$SHOPFORGE_DOMAIN} {
+    reverse_proxy frontend:80
+}
+
+api.{$SHOPFORGE_DOMAIN} {
+    reverse_proxy gateway:3000
+}
