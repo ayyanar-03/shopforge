@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { orderService } from '../services/order.service';
-import type { Order, OrderItem } from '../types/order.types';
+import type { Order } from '../types/order.types';
 import { formatINR } from '../utils/currency';
 
 const STATUS_STYLE: Record<string, string> = {

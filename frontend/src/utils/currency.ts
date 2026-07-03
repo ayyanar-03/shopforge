@@ -1,4 +1,6 @@
-const USD_TO_INR = parseFloat(import.meta.env.VITE_CURRENCY_RATE ?? '83.5');
+import { getEnv } from '../env';
+
+const USD_TO_INR = parseFloat(getEnv('VITE_CURRENCY_RATE', '83.5'));
 
 export function formatINR(usdAmount: number): string {
   const inr = Math.round(usdAmount * USD_TO_INR);

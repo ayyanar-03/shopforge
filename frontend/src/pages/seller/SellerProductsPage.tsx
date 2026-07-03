@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sellerService } from '../../services/seller.service';
 import { productService } from '../../services/product.service';
-import type { Product, PagedProducts } from '../../types/product.types';
+import type { PagedProducts } from '../../types/product.types';
 import StarRating from '../../components/StarRating';
 import { formatINR } from '../../utils/currency';
 

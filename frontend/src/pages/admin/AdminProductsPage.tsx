@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { productService } from '../../services/product.service';
-import type { Product, PagedProducts } from '../../types/product.types';
+import type { PagedProducts } from '../../types/product.types';
 import { formatINR } from '../../utils/currency';
 
 export default function AdminProductsPage() {

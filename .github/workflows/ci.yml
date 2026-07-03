@@ -186,7 +186,5 @@ jobs:
           context: ./frontend
           push: true
           tags: ghcr.io/${{ github.repository }}/frontend:latest
-          build-args: |
-            VITE_API_BASE_URL=http://localhost:3000
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend

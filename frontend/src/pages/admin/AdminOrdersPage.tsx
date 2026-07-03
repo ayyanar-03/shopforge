@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { orderService } from '../../services/order.service';
-import type { Order, OrderItem, OrderStatus, PagedOrders } from '../../types/order.types';
+import type { OrderStatus, PagedOrders } from '../../types/order.types';
 import { formatINR } from '../../utils/currency';
 
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
