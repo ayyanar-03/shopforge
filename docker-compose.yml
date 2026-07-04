@@ -14,6 +14,8 @@ x-db-env: &db-env
 x-redis-env: &redis-env
   REDIS_HOST: redis
   REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+  REDIS_TLS: "false"
 
 x-jwt-env: &jwt-env
   JWT_SECRET: ${JWT_SECRET:-shopforge_secret}
