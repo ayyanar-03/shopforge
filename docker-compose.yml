@@ -9,6 +9,7 @@ x-db-env: &db-env
   DB_USER: shopforge_user
   DB_PASSWORD: shopforge_pass
   DB_NAME: shopforge
+  DB_SSL: "false"
 
 x-redis-env: &redis-env
   REDIS_HOST: redis

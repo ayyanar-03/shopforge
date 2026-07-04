@@ -30,11 +30,16 @@ import { MetricsModule } from './metrics/metrics.module';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || '127.0.0.1',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USER || 'shopforge_user',
-      password: process.env.DB_PASSWORD || 'shopforge_pass',
-      database: process.env.DB_NAME || 'shopforge',
+      ...(process.env.DATABASE_URL
+        ? { url: process.env.DATABASE_URL }
+        : {
+            host: process.env.DB_HOST || '127.0.0.1',
+            port: parseInt(process.env.DB_PORT || '5432', 10),
+            username: process.env.DB_USER || 'shopforge_user',
+            password: process.env.DB_PASSWORD || 'shopforge_pass',
+            database: process.env.DB_NAME || 'shopforge',
+          }),
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
       autoLoadEntities: true,
       synchronize: false,
       migrations: [__dirname + '/migrations/*.js'],
