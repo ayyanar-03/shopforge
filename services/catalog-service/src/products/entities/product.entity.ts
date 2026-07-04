@@ -4,10 +4,8 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
-@Index(['name', 'description'], { fulltext: true })
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()

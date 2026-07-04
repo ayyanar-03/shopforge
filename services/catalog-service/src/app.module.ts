@@ -29,9 +29,9 @@ import { MetricsModule } from './metrics/metrics.module';
       },
     }),
     TypeOrmModule.forRoot({
-      type: 'mysql',
+      type: 'postgres',
       host: process.env.DB_HOST || '127.0.0.1',
-      port: parseInt(process.env.DB_PORT || '3307', 10),
+      port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USER || 'shopforge_user',
       password: process.env.DB_PASSWORD || 'shopforge_pass',
       database: process.env.DB_NAME || 'shopforge',

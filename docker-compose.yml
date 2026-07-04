@@ -4,8 +4,8 @@ x-otel-env: &otel-env
   OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
 
 x-db-env: &db-env
-  DB_HOST: mysql
-  DB_PORT: "3306"
+  DB_HOST: postgres
+  DB_PORT: "5432"
   DB_USER: shopforge_user
   DB_PASSWORD: shopforge_pass
   DB_NAME: shopforge
@@ -20,25 +20,24 @@ x-jwt-env: &jwt-env
 
 services:
   # ── Infrastructure ─────────────────────────────────────────────────────────
-  mysql:
-    image: mysql:8.0
-    container_name: shopforge-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: shopforge-postgres
     restart: unless-stopped
     ports:
-      - "3307:3306"
+      - "5432:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: shopforge
-      MYSQL_USER: shopforge_user
-      MYSQL_PASSWORD: shopforge_pass
+      POSTGRES_DB: shopforge
+      POSTGRES_USER: shopforge_user
+      POSTGRES_PASSWORD: shopforge_pass
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      test: ["CMD-SHELL", "pg_isready -U shopforge_user -d shopforge"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
@@ -68,7 +67,7 @@ services:
       ORDER_SERVICE_URL: http://order-service:3002
       OTEL_SERVICE_NAME: catalog-service
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -97,7 +96,7 @@ services:
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
       OTEL_SERVICE_NAME: order-service
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -238,7 +237,7 @@ services:
       - gateway
 
 volumes:
-  mysql_data:
+  postgres_data:
   redis_data:
   prometheus_data:
   grafana_data:

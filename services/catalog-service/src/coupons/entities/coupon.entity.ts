@@ -28,7 +28,7 @@ export class Coupon {
   @Column({ default: 0 })
   usedCount: number;
 
-  @Column({ nullable: true, type: 'datetime' })
+  @Column({ nullable: true, type: 'timestamp' })
   expiresAt: Date | null;
 
   @Column({ default: true })

@@ -24,7 +24,7 @@ export class Review {
   @Column()
   productId: number;
 
-  @Column({ type: 'tinyint', unsigned: true })
+  @Column({ type: 'smallint' })
   rating: number;
 
   @Column({ type: 'text', nullable: true })
