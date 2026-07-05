@@ -1,5 +1,3 @@
-version: "3.8"
-
 x-otel-env: &otel-env
   OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
 
