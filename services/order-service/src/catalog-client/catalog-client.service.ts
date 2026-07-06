@@ -48,7 +48,7 @@ export class CatalogClientService {
 
   async getCartItems(userId: number): Promise<CartItemDto[]> {
     const { data } = await firstValueFrom(
-      this.http.get<CartItemDto[]>(`${this.baseUrl}/api/internal/cart/${userId}`, {
+      this.http.get<CartItemDto[]>(`${this.baseUrl}/internal/cart/${userId}`, {
         headers: this.headers,
       }),
     );
@@ -57,14 +57,14 @@ export class CatalogClientService {
 
   async clearCart(userId: number): Promise<void> {
     await firstValueFrom(
-      this.http.delete(`${this.baseUrl}/api/internal/cart/${userId}`, { headers: this.headers }),
+      this.http.delete(`${this.baseUrl}/internal/cart/${userId}`, { headers: this.headers }),
     );
   }
 
   async getProduct(id: number): Promise<ProductDto | null> {
     try {
       const { data } = await firstValueFrom(
-        this.http.get<ProductDto>(`${this.baseUrl}/api/internal/products/${id}`, {
+        this.http.get<ProductDto>(`${this.baseUrl}/internal/products/${id}`, {
           headers: this.headers,
         }),
       );
@@ -77,7 +77,7 @@ export class CatalogClientService {
   async decrementStock(id: number, quantity: number): Promise<ProductDto> {
     const { data } = await firstValueFrom(
       this.http.patch<ProductDto>(
-        `${this.baseUrl}/api/internal/products/${id}/decrement`,
+        `${this.baseUrl}/internal/products/${id}/decrement`,
         { quantity },
         { headers: this.headers },
       ),
@@ -88,7 +88,7 @@ export class CatalogClientService {
   async getUser(id: number): Promise<UserDto | null> {
     try {
       const { data } = await firstValueFrom(
-        this.http.get<UserDto>(`${this.baseUrl}/api/internal/users/${id}`, {
+        this.http.get<UserDto>(`${this.baseUrl}/internal/users/${id}`, {
           headers: this.headers,
         }),
       );
@@ -102,7 +102,7 @@ export class CatalogClientService {
     try {
       const { data } = await firstValueFrom(
         this.http.post<CouponResultDto>(
-          `${this.baseUrl}/api/internal/coupons/apply`,
+          `${this.baseUrl}/internal/coupons/apply`,
           { code, total },
           { headers: this.headers },
         ),
@@ -118,7 +118,7 @@ export class CatalogClientService {
     try {
       const { data } = await firstValueFrom(
         this.http.get<{ totalUsers: number; totalProducts: number }>(
-          `${this.baseUrl}/api/internal/stats`,
+          `${this.baseUrl}/internal/stats`,
           { headers: this.headers },
         ),
       );
