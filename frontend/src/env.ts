@@ -8,5 +8,10 @@ declare global {
 }
 
 export function getEnv(key: keyof NonNullable<Window['__ENV__']>, fallback: string): string {
-  return window.__ENV__?.[key] || import.meta.env[key] || fallback;
+  const runtime = window.__ENV__?.[key];
+  // Skip unsubstituted envsubst placeholders served on non-Docker hosts (e.g. Vercel)
+  if (runtime && !runtime.startsWith('${')) {
+    return runtime;
+  }
+  return import.meta.env[key] || fallback;
 }
