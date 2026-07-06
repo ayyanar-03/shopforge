@@ -31,91 +31,105 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel */}
-      <div className="hidden md:flex w-1/2 bg-gradient-to-br from-indigo-600 via-purple-700 to-violet-800 flex-col justify-center items-center text-white p-12 relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute top-10 left-10 w-40 h-40 rounded-full bg-white/5" />
-        <div className="absolute bottom-20 right-8 w-64 h-64 rounded-full bg-white/5" />
-        <div className="absolute top-1/2 left-1/4 w-24 h-24 rounded-full bg-white/5" />
-
-        <div className="relative z-10 text-center">
-          <div className="text-6xl mb-6">⚡</div>
-          <h1 className="text-4xl font-extrabold mb-3 tracking-tight">ShopForge</h1>
-          <p className="text-indigo-200 text-lg leading-relaxed max-w-xs">
-            Your premium marketplace for everything
-          </p>
-          <div className="mt-10 flex flex-col gap-3 text-left">
-            <div className="flex items-center gap-3 text-indigo-100">
-              <span className="text-2xl">🛒</span>
-              <span className="text-sm">Thousands of curated products</span>
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Left branding panel */}
+      <div className="hidden md:flex w-5/12 bg-[#1C1C1C] flex-col justify-center p-12">
+        <div className="flex items-center gap-3 mb-10">
+          <svg className="w-10 h-10" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="#FF6B00" />
+            <path d="M8 10h16M8 16h10M8 22h13" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="23" cy="22" r="3" fill="white" />
+          </svg>
+          <span className="text-white font-bold text-2xl tracking-tight">ShopForge</span>
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
+          India's trusted<br />shopping destination
+        </h1>
+        <p className="text-gray-400 text-base mb-8">
+          Millions of products. Trusted sellers. Fast delivery.
+        </p>
+        <div className="space-y-4">
+          {[
+            'GST invoicing on every order',
+            'Verified sellers and genuine products',
+            'Easy 7-day returns policy',
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <span className="text-gray-300 text-sm">{item}</span>
             </div>
-            <div className="flex items-center gap-3 text-indigo-100">
-              <span className="text-2xl">🚀</span>
-              <span className="text-sm">Fast, secure checkout</span>
-            </div>
-            <div className="flex items-center gap-3 text-indigo-100">
-              <span className="text-2xl">⭐</span>
-              <span className="text-sm">Trusted by thousands of buyers</span>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center bg-white p-8">
+      {/* Right login panel */}
+      <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-1">Welcome back</h2>
-            <p className="text-gray-500 text-sm">Sign in to your ShopForge account</p>
+          <div className="flex items-center gap-2 mb-8 md:hidden">
+            <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="8" fill="#FF6B00" />
+              <path d="M8 10h16M8 16h10M8 22h13" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="23" cy="22" r="3" fill="white" />
+            </svg>
+            <span className="font-bold text-xl text-gray-900">ShopForge</span>
           </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign In</h2>
+            <p className="text-gray-500 text-sm mb-6">Welcome back! Enter your credentials to continue.</p>
 
-          {error && (
-            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isSubmitting}
+                  placeholder="you@example.com"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 disabled:opacity-50 transition-colors"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-semibold text-gray-700">Password</label>
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isSubmitting}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 disabled:opacity-50 transition-colors"
+                />
+              </div>
+              <button
+                type="submit"
                 disabled={isSubmitting}
-                placeholder="you@example.com"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isSubmitting}
-                placeholder="••••••••"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 transition-colors"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-              {isSubmitting ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
+                className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                {isSubmitting ? 'Signing in…' : 'Sign In'}
+              </button>
+            </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-indigo-600 font-semibold hover:underline">
-              Sign Up
-            </Link>
-          </p>
+            <p className="mt-6 text-center text-sm text-gray-600">
+              New to ShopForge?{' '}
+              <Link to="/signup" className="text-orange-500 font-semibold hover:text-orange-600">
+                Create an account
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

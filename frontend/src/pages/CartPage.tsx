@@ -88,18 +88,25 @@ export default function CartPage() {
   const total = coupon ? coupon.finalTotal : subtotal;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Cart</h1>
+    <div className="bg-gray-100 min-h-screen">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">My Cart</h1>
 
       {items.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">
-          <p className="text-lg mb-3">Your cart is empty.</p>
-          <a href="/products" className="text-blue-600 hover:underline text-sm">
-            Browse products
+        <div className="bg-white rounded-lg border border-gray-200 py-16 text-center text-gray-500">
+          <svg className="w-14 h-14 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" strokeLinejoin="round" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+          <p className="text-lg font-semibold mb-1">Your cart is empty</p>
+          <p className="text-sm text-gray-400 mb-4">Add items you like to your cart</p>
+          <a href="/products" className="inline-block px-5 py-2.5 bg-orange-500 text-white text-sm font-semibold rounded-md hover:bg-orange-600 no-underline transition-colors">
+            Continue Shopping
           </a>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="divide-y divide-gray-100">
             {items.map((item) => (
               <div key={item.id} className="flex items-center justify-between px-5 py-4">
@@ -208,7 +215,7 @@ export default function CartPage() {
               <button
                 onClick={() => void checkout()}
                 disabled={checkingOut}
-                className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2.5 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {checkingOut ? 'Placing order...' : 'Place Order'}
               </button>
@@ -216,6 +223,7 @@ export default function CartPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

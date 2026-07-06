@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/auth.service';
 
@@ -11,7 +12,8 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-  const { user: authUser, token, login } = useAuth();
+  const { user: authUser, token, login, logout } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -92,12 +94,26 @@ export default function ProfilePage() {
     buyer: 'bg-blue-100 text-blue-700',
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <div className="max-w-xl mx-auto px-6 py-8 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+    <div className="bg-gray-100 min-h-screen">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          Sign Out
+        </button>
+      </div>
 
       {/* Account info card */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold select-none">
             {profile?.name.charAt(0).toUpperCase()}
@@ -146,7 +162,7 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={savingName || name === profile?.name}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {savingName ? 'Saving...' : 'Save Name'}
           </button>
@@ -194,12 +210,13 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={savingPw}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {savingPw ? 'Changing...' : 'Change Password'}
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }

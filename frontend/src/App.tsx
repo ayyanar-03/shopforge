@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import AdminLayout from './components/AdminLayout';
 import SellerLayout from './components/SellerLayout';
 import LoginPage from './pages/LoginPage';
@@ -44,11 +45,14 @@ function RootRedirect() {
   return <Navigate to={user ? '/products' : '/login'} replace />;
 }
 
-function App() {
+function AppShell() {
+  const location = useLocation();
+  const isAdminOrSeller = location.pathname.startsWith('/admin') || location.pathname.startsWith('/seller');
+  const isAuth = location.pathname === '/login' || location.pathname === '/signup';
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
+    <>
+      <Navbar />
+      <main className={isAuth ? '' : 'min-h-screen bg-gray-50'}>
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginPage />} />
@@ -117,6 +121,17 @@ function App() {
             <Route path="products/:id/edit" element={<ProductFormPage />} />
           </Route>
         </Routes>
+      </main>
+      {!isAdminOrSeller && !isAuth && <Footer />}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppShell />
       </BrowserRouter>
     </AuthProvider>
   );
