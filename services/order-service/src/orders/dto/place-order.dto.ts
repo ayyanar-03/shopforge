@@ -5,4 +5,5 @@ export class PlaceOrderDto {
   @IsOptional() @IsString() couponCode?: string;
   @IsOptional() @IsEnum(PaymentMethod) paymentMethod?: PaymentMethod;
   @IsOptional() @IsUUID('4') idempotencyKey?: string;
+  @IsOptional() @IsString() paymentIntentId?: string;
 }

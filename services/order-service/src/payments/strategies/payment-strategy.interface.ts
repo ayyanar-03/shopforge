@@ -3,5 +3,5 @@ export interface PaymentResult {
   status: 'paid' | 'pending' | 'failed';
 }
 export interface IPaymentStrategy {
-  process(amount: number, currency: string, idempotencyKey: string): Promise<PaymentResult>;
+  process(amount: number, currency: string, idempotencyKey: string, paymentIntentId?: string): Promise<PaymentResult>;
 }

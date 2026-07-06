@@ -17,6 +17,9 @@ export const cartService = {
   validateCoupon: (code: string, total: number) =>
     api.post<CouponResult>('/coupons/validate', { code, total }).then((r) => r.data),
 
+  createPaymentIntent: () =>
+    api.post<{ clientSecret: string }>('/api/orders/payment-intent').then((r) => r.data),
+
   checkout: (payload: CheckoutPayload) =>
     api.post('/api/orders', payload).then((r) => r.data),
 };

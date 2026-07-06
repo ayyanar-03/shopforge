@@ -25,4 +25,5 @@ export interface CheckoutPayload {
   paymentMethod: PaymentMethod;
   idempotencyKey: string;
   couponCode?: string;
+  paymentIntentId?: string;
 }
