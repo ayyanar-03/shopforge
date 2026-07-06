@@ -7,11 +7,14 @@ declare global {
   }
 }
 
+const clean = (v: string) => v.replace(/^﻿/, '').trim();
+
 export function getEnv(key: keyof NonNullable<Window['__ENV__']>, fallback: string): string {
   const runtime = window.__ENV__?.[key];
   // Skip unsubstituted envsubst placeholders served on non-Docker hosts (e.g. Vercel)
   if (runtime && !runtime.startsWith('${')) {
-    return runtime;
+    return clean(runtime);
   }
-  return import.meta.env[key] || fallback;
+  const buildTime = import.meta.env[key] as string | undefined;
+  return buildTime ? clean(buildTime) : fallback;
 }
