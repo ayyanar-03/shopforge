@@ -2,9 +2,10 @@ export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'c
 
 export interface OrderItem {
   id: number;
+  productId: number;
   quantity: number;
   price: number;
-  product: { name: string };
+  product?: { name: string };
 }
 
 export interface Order {

@@ -73,7 +73,8 @@ export default function OrdersPage() {
                 {order.items.map((item) => (
                   <div key={item.id} className="flex justify-between px-5 py-3 text-sm">
                     <span className="text-gray-700">
-                      {item.product.name} <span className="text-gray-400">× {item.quantity}</span>
+                      {item.product?.name ?? `Product #${item.productId}`}{' '}
+                      <span className="text-gray-400">× {item.quantity}</span>
                     </span>
                     <span className="font-medium text-gray-900">
                       {formatINR(Number(item.price) * item.quantity)}

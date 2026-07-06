@@ -1,9 +1,9 @@
 import api from '../api';
-import type { Order, PagedOrders } from '../types/order.types';
+import type { PagedOrders } from '../types/order.types';
 
 export const orderService = {
   getOrders: () =>
-    api.get<Order[]>('/api/orders').then((r) => r.data),
+    api.get<PagedOrders>('/api/orders').then((r) => r.data.data),
 
   getAdminOrders: (page: number, limit = 20) =>
     api.get<PagedOrders>('/api/admin/orders', { params: { page, limit } }).then((r) => r.data),
