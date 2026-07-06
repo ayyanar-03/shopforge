@@ -12,12 +12,16 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pending',
-  confirmed: 'Confirmed',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
+const PAYMENT_STATUS_STYLE: Record<string, string> = {
+  pending: 'text-amber-600',
+  paid: 'text-green-600',
+  failed: 'text-red-600',
+};
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  cod: 'Cash on Delivery',
+  stripe: 'Stripe',
+  razorpay: 'Razorpay',
 };
 
 export default function OrdersPage() {
@@ -62,10 +66,9 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white border border-gray-200 rounded-xl overflow-hidden"
-            >
+            <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+              {/* Header */}
               <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
                 <div>
                   <span className="font-semibold text-gray-900">Order {order.id}</span>
@@ -73,13 +76,12 @@ export default function OrdersPage() {
                     {new Date(order.createdAt).toLocaleString()}
                   </span>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[order.status] ?? 'bg-gray-100 text-gray-600'}`}
-                >
-                  {STATUS_LABEL[order.status] ?? order.status}
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[order.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                 </span>
               </div>
 
+              {/* Items */}
               <div className="divide-y divide-gray-50">
                 {order.items.map((item) => (
                   <div key={item.id} className="flex justify-between px-5 py-3 text-sm">
@@ -94,10 +96,37 @@ export default function OrdersPage() {
                 ))}
               </div>
 
-              <div className="flex justify-end px-5 py-3 border-t border-gray-100">
-                <span className="text-sm text-gray-500 mr-2">Total</span>
-                <span className="font-bold text-gray-900">{formatINR(Number(order.total))}</span>
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex items-end justify-between gap-4">
+                <div className="text-xs text-gray-500 space-y-0.5">
+                  <div>
+                    <span className="font-medium">Payment:</span>{' '}
+                    {PAYMENT_METHOD_LABEL[order.paymentMethod] ?? order.paymentMethod}
+                    {' · '}
+                    <span className={PAYMENT_STATUS_STYLE[order.paymentStatus] ?? 'text-gray-500'}>
+                      {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                    </span>
+                  </div>
+                  {order.couponCode && (
+                    <div className="text-green-600">
+                      Coupon <span className="font-mono font-semibold">{order.couponCode}</span>
+                      {' — '}{formatINR(Number(order.discount))} off
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  {Number(order.discount) > 0 && !order.couponCode && (
+                    <div className="text-xs text-green-600 mb-0.5">
+                      Discount: −{formatINR(Number(order.discount))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Total</span>
+                    <span className="font-bold text-gray-900">{formatINR(Number(order.total))}</span>
+                  </div>
+                </div>
               </div>
+
             </div>
           ))}
         </div>
