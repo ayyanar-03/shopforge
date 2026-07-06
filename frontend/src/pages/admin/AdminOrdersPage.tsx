@@ -66,8 +66,7 @@ export default function AdminOrdersPage() {
                     className="flex items-center gap-4 text-left flex-1 hover:opacity-80"
                   >
                     <span className="font-semibold text-gray-900">#{o.id}</span>
-                    <span className="text-sm text-gray-600">{o.user?.name}</span>
-                    <span className="text-xs text-gray-400">{o.user?.email}</span>
+                    <span className="text-sm text-gray-600">User #{o.userId}</span>
                     <span className="font-bold text-gray-900 ml-auto mr-4">
                       {formatINR(Number(o.total))}
                     </span>
@@ -103,7 +102,7 @@ export default function AdminOrdersPage() {
                     {o.items.map((item) => (
                       <div key={item.id} className="flex justify-between px-5 py-2 text-sm">
                         <span className="text-gray-700">
-                          {item.product.name}{' '}
+                          {item.product?.name ?? `Product #${item.productId}`}{' '}
                           <span className="text-gray-400">× {item.quantity}</span>
                         </span>
                         <span className="font-medium text-gray-900">

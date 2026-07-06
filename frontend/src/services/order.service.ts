@@ -1,5 +1,5 @@
 import api from '../api';
-import type { PagedOrders } from '../types/order.types';
+import type { Order, PagedOrders } from '../types/order.types';
 
 export const orderService = {
   getOrders: () =>

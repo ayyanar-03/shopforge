@@ -46,7 +46,7 @@ export default function ProfilePage() {
       const data = await authService.updateProfile({ name });
       setProfile((p) => (p ? { ...p, name: data.name } : p));
       // Update auth context so navbar shows new name
-      if (authUser) login({ ...authUser, name: data.name }, token ?? '');
+      if (authUser) login({ ...authUser, name: data.name }, token ?? '', localStorage.getItem('refreshToken') ?? '');
       setNameMsg('Name updated successfully.');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
