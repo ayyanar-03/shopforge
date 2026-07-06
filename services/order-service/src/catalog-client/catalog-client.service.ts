@@ -43,7 +43,7 @@ export class CatalogClientService {
   }
 
   private get headers() {
-    return { 'x-internal-token': this.token };
+    return { 'x-internal-token': this.token, 'Api-Version': '1' };
   }
 
   async getCartItems(userId: number): Promise<CartItemDto[]> {
