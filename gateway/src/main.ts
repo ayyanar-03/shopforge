@@ -29,9 +29,13 @@ async function bootstrap() {
 
   const http = app.getHttpAdapter().getInstance() as import('express').Express;
 
-  // Order-service routes
-  const orderPaths = ['/api/orders', '/api/admin'];
-  http.use(orderPaths, makeProxy(ORDER_URL));
+  // Order-service routes — use root-level middleware to preserve full path
+  const ORDER_PREFIXES = ['/api/orders', '/api/admin'];
+  const orderProxy = makeProxy(ORDER_URL);
+  http.use((req: Request, res: Response, next: NextFunction) => {
+    if (ORDER_PREFIXES.some((p) => req.path.startsWith(p))) return orderProxy(req, res, next);
+    next();
+  });
 
   // Catalog-service: everything except gateway-local routes
   const catalogProxy = makeProxy(CATALOG_URL);
