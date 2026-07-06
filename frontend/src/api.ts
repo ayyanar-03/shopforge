@@ -50,6 +50,9 @@ api.interceptors.response.use(
       if (!refreshToken) {
         isRefreshing = false;
         processQueue(error, null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
         return Promise.reject(error);
       }
 
