@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { orderService } from '../services/order.service';
+import { productService } from '../services/product.service';
 import type { Order } from '../types/order.types';
 import { formatINR } from '../utils/currency';
 
@@ -21,12 +22,22 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [productNames, setProductNames] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     orderService
       .getOrders()
-      .then((data) => setOrders(data))
+      .then(async (data) => {
+        setOrders(data);
+        const ids = [...new Set(data.flatMap((o) => o.items.map((i) => i.productId)))];
+        const results = await Promise.allSettled(ids.map((id) => productService.getProduct(id)));
+        const names: Record<number, string> = {};
+        results.forEach((r, i) => {
+          if (r.status === 'fulfilled') names[ids[i]] = r.value.name;
+        });
+        setProductNames(names);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -57,7 +68,7 @@ export default function OrdersPage() {
             >
               <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
                 <div>
-                  <span className="font-semibold text-gray-900">Order #{order.id}</span>
+                  <span className="font-semibold text-gray-900">Order {order.id}</span>
                   <span className="ml-3 text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleString()}
                   </span>
@@ -73,7 +84,7 @@ export default function OrdersPage() {
                 {order.items.map((item) => (
                   <div key={item.id} className="flex justify-between px-5 py-3 text-sm">
                     <span className="text-gray-700">
-                      {item.product?.name ?? `Product #${item.productId}`}{' '}
+                      {productNames[item.productId] ?? `Product ${item.productId}`}{' '}
                       <span className="text-gray-400">× {item.quantity}</span>
                     </span>
                     <span className="font-medium text-gray-900">
