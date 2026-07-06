@@ -46,7 +46,10 @@ export class EmailService {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const url = nodemailer.getTestMessageUrl(info);
       if (url) this.logger.log(`Email preview: ${url}`);
-    } catch (err) { this.logger.error('sendOrderConfirmation failed', err); }
+      else this.logger.log(`Order confirmation email sent → ${to}`);
+    } catch (err) {
+      this.logger.error(`sendOrderConfirmation failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   async sendLowStockAlert(to: string, sellerName: string, productName: string, stock: number) {
