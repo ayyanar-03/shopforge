@@ -3,6 +3,10 @@ import { getEnv } from './env';
 
 const api = axios.create({
   baseURL: getEnv('VITE_API_BASE_URL', 'http://localhost:3000'),
+  headers: {
+    'Api-Version': '1',
+    'ngrok-skip-browser-warning': 'true',
+  },
 });
 
 api.interceptors.request.use((config) => {
