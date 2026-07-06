@@ -15,12 +15,7 @@ export class InventoryProcessor extends WorkerHost {
   constructor(private readonly service: NotificationService) { super(); }
 
   async process(job: Job<InventoryJob>): Promise<void> {
-    const { productName, newStock, sellerEmail, sellerName } = job.data;
-    this.logger.warn(`Low stock: "${productName}" at ${newStock} — alerting seller`);
-    await this.service.send(['email'], {
-      type: 'low_stock_alert',
-      recipient: { email: sellerEmail, name: sellerName },
-      data: { productName, currentStock: newStock },
-    });
+    const { productName, newStock } = job.data;
+    this.logger.warn(`Low stock: "${productName}" at ${newStock}`);
   }
 }

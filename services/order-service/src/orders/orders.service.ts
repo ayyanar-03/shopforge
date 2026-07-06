@@ -148,19 +148,8 @@ export class OrdersService {
     }
 
     const lowStock = stockUpdates.filter((s) => s.newStock < LOW_STOCK_THRESHOLD);
-    if (!lowStock.length) return;
-
-    const sellers = await Promise.all(lowStock.map((s) => this.catalog.getUser(s.sellerId)));
-
-    for (let i = 0; i < lowStock.length; i++) {
-      const seller = sellers[i];
-      if (seller) {
-        void this.inventoryQueue.add('check', {
-          ...lowStock[i],
-          sellerEmail: seller.email,
-          sellerName: seller.name,
-        });
-      }
+    for (const item of lowStock) {
+      void this.inventoryQueue.add('check', item);
     }
   }
 
