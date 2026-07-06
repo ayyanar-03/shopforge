@@ -12,19 +12,17 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
 
 /* ─── Shipment tracking ─────────────────────────────────────────────────── */
 const TRACKING_STEPS = [
-  { key: 'placed', label: 'Order Placed', icon: '📋' },
-  { key: 'confirmed', label: 'Confirmed', icon: '✅' },
-  { key: 'shipped', label: 'Shipped', icon: '📦' },
-  { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🚚' },
-  { key: 'delivered', label: 'Delivered', icon: '🏠' },
+  { key: 'pending', label: 'Order Placed' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'shipped', label: 'Shipped' },
+  { key: 'delivered', label: 'Delivered' },
 ];
 
 const STATUS_TO_STEP: Record<string, number> = {
   pending: 0,
   confirmed: 1,
   shipped: 2,
-  out_for_delivery: 3,
-  delivered: 4,
+  delivered: 3,
   cancelled: -1,
 };
 
@@ -244,7 +242,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${STATUS_BADGE[order.status] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                          {order.status === 'out_for_delivery' ? 'Out for Delivery' : order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </span>
                         <button
                           onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
@@ -301,7 +299,7 @@ export default function OrdersPage() {
                             Delivered on {orderDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                           </p>
                         )}
-                        {order.status === 'shipped' && (
+                        {(order.status === 'shipped' || order.status === 'confirmed') && (
                           <p className="text-xs text-indigo-600 font-medium mt-2 text-center">
                             Expected delivery: {new Date(orderDate.getTime() + 3 * 86400000).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
                           </p>
