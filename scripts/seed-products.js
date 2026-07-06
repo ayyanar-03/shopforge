@@ -423,22 +423,14 @@ const PRODUCTS = [
   },
 ];
 
+const HEADERS = { 'Content-Type': 'application/json', 'Api-Version': '1' };
+
 async function getToken() {
   const res = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: HEADERS,
     body: JSON.stringify({ email: 'admin@shopforge.com', password: 'Admin123!' }),
   });
-  if (!res.ok) {
-    // Try signup
-    const s = await fetch(`${BASE}/auth/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Admin', email: 'admin@shopforge.com', password: 'Admin123!', role: 'admin' }),
-    });
-    const d = await s.json();
-    return d.accessToken;
-  }
   const d = await res.json();
   return d.accessToken;
 }
@@ -446,7 +438,7 @@ async function getToken() {
 async function createProduct(product, token) {
   const res = await fetch(`${BASE}/products`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { ...HEADERS, Authorization: `Bearer ${token}` },
     body: JSON.stringify(product),
   });
   const data = await res.json();
