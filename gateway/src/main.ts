@@ -10,11 +10,21 @@ const CATALOG_URL = process.env.CATALOG_SERVICE_URL ?? 'http://localhost:3001';
 
 const GATEWAY_LOCAL = new Set(['/health', '/metrics']);
 
+const CORS_HEADERS = [
+  'access-control-allow-origin',
+  'access-control-allow-credentials',
+  'access-control-expose-headers',
+];
+
 function makeProxy(target: string) {
   return createProxyMiddleware<Request, Response>({
     target,
     changeOrigin: true,
     on: {
+      proxyRes: (proxyRes) => {
+        // Strip upstream CORS headers so the gateway's own cors() middleware wins
+        CORS_HEADERS.forEach((h) => delete proxyRes.headers[h]);
+      },
       error: (_err, _req, res) => {
         (res as Response).status(502).json({ message: 'Upstream service unavailable' });
       },
