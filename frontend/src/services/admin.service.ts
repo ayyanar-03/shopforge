@@ -5,7 +5,7 @@ import type { User } from '../types/user.types';
 
 export const adminService = {
   getStats: () =>
-    api.get<AdminStats>('/admin/stats').then((r) => r.data),
+    api.get<AdminStats>('/api/admin/stats').then((r) => r.data),
 
   getUsers: (page: number, limit = 20) =>
     api.get<PagedResponse<User>>('/admin/users', { params: { page, limit } }).then((r) => r.data),
