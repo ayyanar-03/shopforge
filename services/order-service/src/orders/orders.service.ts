@@ -184,11 +184,11 @@ export class OrdersService {
   async getStats() {
     const result = await this.orderRepo
       .createQueryBuilder('o')
-      .select(['COUNT(*) AS totalOrders', 'COALESCE(SUM(o.total), 0) AS totalRevenue'])
-      .getRawOne<{ totalOrders: string; totalRevenue: string }>();
+      .select(['COUNT(*) AS totalorders', 'COALESCE(SUM(o.total), 0) AS totalrevenue'])
+      .getRawOne<{ totalorders: string; totalrevenue: string }>();
     return {
-      totalOrders: parseInt(result?.totalOrders ?? '0', 10),
-      totalRevenue: parseFloat(result?.totalRevenue ?? '0'),
+      totalOrders: parseInt(result?.totalorders ?? '0', 10),
+      totalRevenue: parseFloat(result?.totalrevenue ?? '0'),
     };
   }
 }

@@ -15,14 +15,14 @@ export class AdminOrdersService {
     const [orderStats, catalogStats] = await Promise.all([
       this.orderRepo
         .createQueryBuilder('o')
-        .select(['COUNT(*) AS totalOrders', 'COALESCE(SUM(o.total), 0) AS totalRevenue'])
-        .getRawOne<{ totalOrders: string; totalRevenue: string }>(),
+        .select(['COUNT(*) AS totalorders', 'COALESCE(SUM(o.total), 0) AS totalrevenue'])
+        .getRawOne<{ totalorders: string; totalrevenue: string }>(),
       this.catalog.getCatalogStats(),
     ]);
     return {
       ...catalogStats,
-      totalOrders: parseInt(orderStats?.totalOrders ?? '0', 10),
-      totalRevenue: parseFloat(orderStats?.totalRevenue ?? '0'),
+      totalOrders: parseInt(orderStats?.totalorders ?? '0', 10),
+      totalRevenue: parseFloat(orderStats?.totalrevenue ?? '0'),
     };
   }
 
