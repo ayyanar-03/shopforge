@@ -12,11 +12,6 @@ interface Req { user: { id: number; email: string; role: string } }
 export class OrdersController {
   constructor(@Inject(ORDERS_SERVICE) private readonly ordersService: IOrdersService) {}
 
-  @Post('payment-intent')
-  createPaymentIntent(@Request() req: Req) {
-    return this.ordersService.createPaymentIntent(req.user.id);
-  }
-
   @Post()
   placeOrder(@Request() req: Req, @Body() dto: PlaceOrderDto) {
     return this.ordersService.placeOrder(req.user.id, dto);

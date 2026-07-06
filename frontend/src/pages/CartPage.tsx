@@ -1,93 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { cartService } from '../services/cart.service';
 import type { CartItem, CouponResult, PaymentMethod } from '../types/cart.types';
 import { formatINR } from '../utils/currency';
-import { getEnv } from '../env';
-
-const stripePromise = loadStripe(getEnv('VITE_STRIPE_PUBLISHABLE_KEY', ''));
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cod: 'Cash on Delivery',
-  stripe: 'Credit / Debit Card (Stripe)',
+  stripe: 'Stripe (test mode)',
   razorpay: 'Razorpay (test mode)',
 };
-
-const CARD_STYLE = {
-  style: {
-    base: { fontSize: '14px', color: '#111827', fontFamily: 'inherit', '::placeholder': { color: '#9ca3af' } },
-    invalid: { color: '#dc2626' },
-  },
-};
-
-interface StripeBlockProps {
-  total: number;
-  coupon: CouponResult | null;
-  idempotencyKey: string;
-  onSuccess: () => void;
-}
-
-function StripeBlock({ total, coupon, idempotencyKey, onSuccess }: StripeBlockProps) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [busy, setBusy] = useState(false);
-  const [cardError, setCardError] = useState('');
-
-  const pay = async () => {
-    if (!stripe || !elements) return;
-    setCardError('');
-    setBusy(true);
-    try {
-      const { clientSecret } = await cartService.createPaymentIntent();
-      const card = elements.getElement(CardElement);
-      if (!card) throw new Error('Card element missing');
-      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card },
-      });
-      if (error) { setCardError(error.message ?? 'Payment failed'); return; }
-      if (paymentIntent?.status !== 'succeeded') { setCardError('Payment did not succeed'); return; }
-      await cartService.checkout({
-        paymentMethod: 'stripe',
-        idempotencyKey,
-        paymentIntentId: paymentIntent.id,
-        ...(coupon ? { couponCode: coupon.code } : {}),
-      });
-      onSuccess();
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setCardError(msg ?? 'Checkout failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="space-y-3 w-full">
-      <div className="p-3 bg-white border border-gray-300 rounded-lg">
-        <CardElement options={CARD_STYLE} />
-      </div>
-      <p className="text-xs text-gray-400">
-        Test card: <span className="font-mono">4242 4242 4242 4242</span> · any future date · any CVC
-      </p>
-      {cardError && <p className="text-red-600 text-xs">{cardError}</p>}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-500">Total</p>
-          <p className="text-xl font-bold text-gray-900">{formatINR(total)}</p>
-        </div>
-        <button
-          onClick={() => void pay()}
-          disabled={busy || !stripe}
-          className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-        >
-          {busy ? 'Processing…' : 'Pay with Card'}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -107,24 +28,33 @@ export default function CartPage() {
     setLoading(false);
   };
 
-  useEffect(() => { void fetchCart(); }, []);
+  useEffect(() => {
+    void fetchCart();
+  }, []);
 
   const subtotal = items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
-  const total = coupon ? coupon.finalTotal : subtotal;
 
   const applyCoupon = async () => {
     if (!couponInput.trim()) return;
-    setApplyingCoupon(true); setCouponError(''); setCoupon(null);
+    setApplyingCoupon(true);
+    setCouponError('');
+    setCoupon(null);
     try {
       const data = await cartService.validateCoupon(couponInput.trim(), subtotal);
       setCoupon(data);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setCouponError(msg ?? 'Invalid coupon code');
-    } finally { setApplyingCoupon(false); }
+    } finally {
+      setApplyingCoupon(false);
+    }
   };
 
-  const removeCoupon = () => { setCoupon(null); setCouponInput(''); setCouponError(''); };
+  const removeCoupon = () => {
+    setCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+  };
 
   const removeItem = async (id: number) => {
     await cartService.removeItem(id);
@@ -135,7 +65,11 @@ export default function CartPage() {
   const checkout = async () => {
     setCheckingOut(true);
     try {
-      await cartService.checkout({ paymentMethod, idempotencyKey, ...(coupon ? { couponCode: coupon.code } : {}) });
+      await cartService.checkout({
+        paymentMethod,
+        idempotencyKey,
+        ...(coupon ? { couponCode: coupon.code } : {}),
+      });
       navigate('/orders');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -145,7 +79,13 @@ export default function CartPage() {
   };
 
   if (loading)
-    return <div className="flex items-center justify-center min-h-64"><div className="text-gray-500 text-sm">Loading cart...</div></div>;
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-gray-500 text-sm">Loading cart...</div>
+      </div>
+    );
+
+  const total = coupon ? coupon.finalTotal : subtotal;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
@@ -154,11 +94,12 @@ export default function CartPage() {
       {items.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <p className="text-lg mb-3">Your cart is empty.</p>
-          <a href="/products" className="text-blue-600 hover:underline text-sm">Browse products</a>
+          <a href="/products" className="text-blue-600 hover:underline text-sm">
+            Browse products
+          </a>
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {/* Items */}
           <div className="divide-y divide-gray-100">
             {items.map((item) => (
               <div key={item.id} className="flex items-center justify-between px-5 py-4">
@@ -183,7 +124,7 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Coupon */}
+          {/* Coupon code */}
           <div className="border-t border-gray-100 px-5 py-4">
             {coupon ? (
               <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
@@ -194,12 +135,18 @@ export default function CartPage() {
                     {coupon.type === 'percentage' ? ` (${coupon.value}% off)` : ' off'}
                   </span>
                 </div>
-                <button onClick={removeCoupon} className="text-xs text-green-600 hover:text-green-800 ml-3">Remove</button>
+                <button
+                  onClick={removeCoupon}
+                  className="text-xs text-green-600 hover:text-green-800 ml-3"
+                >
+                  Remove
+                </button>
               </div>
             ) : (
               <div className="flex gap-2">
                 <input
-                  type="text" value={couponInput}
+                  type="text"
+                  value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === 'Enter' && void applyCoupon()}
                   placeholder="Coupon code"
@@ -208,7 +155,7 @@ export default function CartPage() {
                 <button
                   onClick={() => void applyCoupon()}
                   disabled={applyingCoupon || !couponInput.trim()}
-                  className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {applyingCoupon ? 'Checking…' : 'Apply'}
                 </button>
@@ -219,12 +166,16 @@ export default function CartPage() {
 
           {/* Payment method */}
           <div className="border-t border-gray-100 px-5 py-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment method</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Payment method
+            </p>
             <div className="flex flex-col gap-2">
               {(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => (
                 <label key={method} className="flex items-center gap-2.5 cursor-pointer">
                   <input
-                    type="radio" name="paymentMethod" value={method}
+                    type="radio"
+                    name="paymentMethod"
+                    value={method}
                     checked={paymentMethod === method}
                     onChange={() => setPaymentMethod(method)}
                     className="accent-blue-600"
@@ -238,40 +189,30 @@ export default function CartPage() {
           {/* Totals + checkout */}
           <div className="border-t border-gray-200 px-5 py-4 bg-gray-50">
             {coupon && (
-              <>
-                <div className="flex justify-between text-sm text-gray-500 mb-1">
-                  <span>Subtotal</span><span>{formatINR(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-green-600 mb-3">
-                  <span>Discount ({coupon.code})</span><span>−{formatINR(coupon.discountAmount)}</span>
-                </div>
-              </>
-            )}
-
-            {paymentMethod === 'stripe' ? (
-              <Elements stripe={stripePromise}>
-                <StripeBlock
-                  total={total}
-                  coupon={coupon}
-                  idempotencyKey={idempotencyKey}
-                  onSuccess={() => navigate('/orders')}
-                />
-              </Elements>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total</p>
-                  <p className="text-xl font-bold text-gray-900">{formatINR(total)}</p>
-                </div>
-                <button
-                  onClick={() => void checkout()}
-                  disabled={checkingOut}
-                  className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                >
-                  {checkingOut ? 'Placing order...' : 'Place Order'}
-                </button>
+              <div className="flex justify-between text-sm text-gray-500 mb-1">
+                <span>Subtotal</span>
+                <span>{formatINR(subtotal)}</span>
               </div>
             )}
+            {coupon && (
+              <div className="flex justify-between text-sm text-green-600 mb-2">
+                <span>Discount ({coupon.code})</span>
+                <span>−{formatINR(coupon.discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total</p>
+                <p className="text-xl font-bold text-gray-900">{formatINR(total)}</p>
+              </div>
+              <button
+                onClick={() => void checkout()}
+                disabled={checkingOut}
+                className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {checkingOut ? 'Placing order...' : 'Place Order'}
+              </button>
+            </div>
           </div>
         </div>
       )}

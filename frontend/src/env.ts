@@ -3,7 +3,6 @@ declare global {
     __ENV__?: {
       VITE_API_BASE_URL?: string;
       VITE_CURRENCY_RATE?: string;
-      VITE_STRIPE_PUBLISHABLE_KEY?: string;
     };
   }
 }

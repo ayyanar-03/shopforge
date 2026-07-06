@@ -5,7 +5,7 @@ import type { IPaymentStrategy, PaymentResult } from './payment-strategy.interfa
 @Injectable()
 export class StripeStrategy implements IPaymentStrategy {
   private readonly logger = new Logger(StripeStrategy.name);
-  readonly stripe: Stripe;
+  private readonly stripe: Stripe;
 
   constructor() {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? 'sk_test_placeholder', {
@@ -13,30 +13,12 @@ export class StripeStrategy implements IPaymentStrategy {
     });
   }
 
-  async createIntent(amountInINR: number): Promise<{ clientSecret: string }> {
-    const intent = await this.stripe.paymentIntents.create({
-      amount: Math.round(amountInINR * 100),
-      currency: 'inr',
-      automatic_payment_methods: { enabled: true },
-    });
-    return { clientSecret: intent.client_secret! };
-  }
-
-  async process(
-    amount: number,
-    currency: string,
-    idempotencyKey: string,
-    paymentIntentId?: string,
-  ): Promise<PaymentResult> {
-    if (paymentIntentId) {
-      const intent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
-      return { paymentId: intent.id, status: intent.status === 'succeeded' ? 'paid' : 'pending' };
-    }
-    // Test-mode fallback: auto-charge without card form
-    this.logger.log(`Stripe test mode: creating PaymentIntent for ${Math.round(amount * 100)} ${currency}`);
+  async process(amount: number, currency: string, idempotencyKey: string): Promise<PaymentResult> {
+    const amountInCents = Math.round(amount * 100);
+    this.logger.log(`Stripe: creating PaymentIntent for ${amountInCents} ${currency.toUpperCase()}`);
     const intent = await this.stripe.paymentIntents.create(
       {
-        amount: Math.round(amount * 100),
+        amount: amountInCents,
         currency: currency.toLowerCase(),
         payment_method: 'pm_card_visa',
         confirm: true,

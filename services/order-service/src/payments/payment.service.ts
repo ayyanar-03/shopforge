@@ -8,25 +8,12 @@ import type { IPaymentStrategy, PaymentResult } from './strategies/payment-strat
 @Injectable()
 export class PaymentService {
   private readonly strategies: Record<string, IPaymentStrategy>;
-  constructor(
-    private readonly stripe: StripeStrategy,
-    razorpay: RazorpayStrategy,
-    cod: CodStrategy,
-  ) {
-    this.strategies = {
-      [PaymentMethod.STRIPE]: stripe,
-      [PaymentMethod.RAZORPAY]: razorpay,
-      [PaymentMethod.COD]: cod,
-    };
+  constructor(stripe: StripeStrategy, razorpay: RazorpayStrategy, cod: CodStrategy) {
+    this.strategies = { [PaymentMethod.STRIPE]: stripe, [PaymentMethod.RAZORPAY]: razorpay, [PaymentMethod.COD]: cod };
   }
-
-  process(method: PaymentMethod, amount: number, key: string, paymentIntentId?: string): Promise<PaymentResult> {
+  process(method: PaymentMethod, amount: number, key: string): Promise<PaymentResult> {
     const s = this.strategies[method];
     if (!s) throw new BadRequestException(`Unknown payment method: ${method}`);
-    return s.process(amount, 'inr', key, paymentIntentId);
-  }
-
-  createStripeIntent(amountInINR: number): Promise<{ clientSecret: string }> {
-    return this.stripe.createIntent(amountInINR);
+    return s.process(amount, 'usd', key);
   }
 }

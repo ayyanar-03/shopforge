@@ -4,7 +4,9 @@
       "PowerShell(docker-compose *)",
       "PowerShell(Start-Process \"http://localhost:5173\")",
       "PowerShell(Get-NetTCPConnection *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }

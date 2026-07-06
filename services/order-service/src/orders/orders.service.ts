@@ -65,7 +65,7 @@ export class OrdersService {
     const total = parseFloat((subtotal - discount).toFixed(2));
 
     const { paymentId, status: paymentStatus } = await this.paymentService.process(
-      paymentMethod, total, idempotencyKey, dto.paymentIntentId,
+      paymentMethod, total, idempotencyKey,
     );
 
     const stockUpdates = await this.decrementAllStock(cartItems);
@@ -168,16 +168,6 @@ export class OrdersService {
     const order = await this.orderRepo.findOne({ where: { id }, relations: { items: true } });
     if (!order) throw new NotFoundException('Order not found');
     return order;
-  }
-
-  async createPaymentIntent(userId: number): Promise<{ clientSecret: string }> {
-    const cartItems = await this.catalog.getCartItems(userId);
-    if (!cartItems.length) throw new BadRequestException('Cart is empty');
-    const subtotal = cartItems.reduce(
-      (sum, item) => sum + Number(item.product.price) * item.quantity,
-      0,
-    );
-    return this.paymentService.createStripeIntent(subtotal);
   }
 
   async getStats() {
