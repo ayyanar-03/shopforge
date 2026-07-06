@@ -19,7 +19,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const data = await authService.login(email, password);
-      login(data.user, data.accessToken);
+      login(data.user, data.accessToken, data.refreshToken);
       navigate('/products');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data

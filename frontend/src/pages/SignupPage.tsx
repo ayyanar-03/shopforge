@@ -20,7 +20,7 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       const data = await authService.signup(name, email, password);
-      login(data.user, data.accessToken);
+      login(data.user, data.accessToken, data.refreshToken);
       navigate('/products');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
