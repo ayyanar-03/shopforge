@@ -18,5 +18,5 @@ export const cartService = {
     api.post<CouponResult>('/coupons/validate', { code, total }).then((r) => r.data),
 
   checkout: (payload: CheckoutPayload) =>
-    api.post('/orders', payload).then((r) => r.data),
+    api.post('/api/orders', payload).then((r) => r.data),
 };
