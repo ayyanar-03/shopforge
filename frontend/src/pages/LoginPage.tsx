@@ -42,21 +42,6 @@ export default function LoginPage() {
           </svg>
           <span className="text-white font-bold text-2xl tracking-tight">ShopForge</span>
         </div>
-        <div className="space-y-4">
-          {[
-            'GST invoicing on every order',
-            'Verified sellers and genuine products',
-            'Easy 7-day returns policy',
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <span className="text-gray-300 text-sm">{item}</span>
-            </div>
-          ))}
         </div>
       </div>
 
