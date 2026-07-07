@@ -38,20 +38,6 @@ const PaymentLogos = () => (
 export default function Footer() {
   return (
     <footer className="bg-[#1C1C1C] text-gray-400 mt-12">
-      {/* Top bar */}
-      <div className="border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap gap-4 items-center justify-between">
-          <span className="text-sm text-gray-300 font-medium">
-            Original products. Trusted sellers. Fast delivery.
-          </span>
-          <div className="flex flex-wrap gap-4 text-xs">
-            <Link to="/login" className="text-gray-400 hover:text-orange-400 no-underline transition-colors">Sign In</Link>
-            <Link to="/signup" className="text-gray-400 hover:text-orange-400 no-underline transition-colors">Register</Link>
-            <a href="#" className="text-gray-400 hover:text-orange-400 no-underline transition-colors">Sell on ShopForge</a>
-            <a href="#" className="text-gray-400 hover:text-orange-400 no-underline transition-colors">Help Center</a>
-          </div>
-        </div>
-      </div>
 
       {/* Main footer content */}
       <div className="max-w-7xl mx-auto px-6 py-10">

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { cartService } from '../services/cart.service';
 import type { CartItem, CouponResult, PaymentMethod } from '../types/cart.types';
 import { formatINR } from '../utils/currency';
+import { getProductImage } from '../utils/productImage';
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cod: 'Cash on Delivery',
@@ -109,20 +110,29 @@ export default function CartPage() {
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="divide-y divide-gray-100">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between px-5 py-4">
-                <div>
-                  <p className="font-medium text-gray-900">{item.product.name}</p>
-                  <p className="text-sm text-gray-500">
+              <div key={item.id} className="flex items-start gap-4 px-5 py-4">
+                <Link to={`/products/${item.product.id}`} className="shrink-0">
+                  <img
+                    src={getProductImage({ id: item.product.id, price: Number(item.product.price), imageUrl: item.product.imageUrl, category: item.product.category })}
+                    alt={item.product.name}
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-100"
+                  />
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <Link to={`/products/${item.product.id}`} className="no-underline">
+                    <p className="font-medium text-gray-900 hover:text-orange-600 transition-colors line-clamp-2">{item.product.name}</p>
+                  </Link>
+                  <p className="text-sm text-gray-500 mt-0.5">
                     {formatINR(Number(item.product.price))} × {item.quantity}
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-end gap-2 shrink-0">
                   <span className="font-semibold text-gray-900">
                     {formatINR(Number(item.product.price) * item.quantity)}
                   </span>
                   <button
                     onClick={() => void removeItem(item.id)}
-                    className="text-sm text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
                   >
                     Remove
                   </button>

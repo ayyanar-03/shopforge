@@ -6,4 +6,5 @@ export interface IOrdersService {
   placeOrder(userId: number, dto: PlaceOrderDto): Promise<unknown>;
   getOrders(userId: number, page: number, limit: number): Promise<unknown>;
   getOrder(id: number): Promise<unknown>;
+  cancelOrder(userId: number, orderId: number): Promise<unknown>;
 }

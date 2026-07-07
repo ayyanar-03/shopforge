@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -57,22 +57,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQ, setSearchQ] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  // Close mobile on route change
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -83,7 +69,6 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    setDropdownOpen(false);
     navigate('/login');
   };
 
@@ -122,51 +107,11 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-2 shrink-0">
             {user ? (
               <>
-                {/* User dropdown */}
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex flex-col items-center text-white hover:text-orange-400 transition-colors px-2 py-1 rounded"
-                  >
-                    <UserIcon />
-                    <span className="text-[10px] mt-0.5 max-w-[70px] truncate">{user.name.split(' ')[0]}</span>
-                  </button>
-                  {dropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block capitalize ${
-                          isAdmin ? 'bg-red-100 text-red-700' : isSeller ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                        }`}>{user.role}</span>
-                      </div>
-                      <Link to="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 no-underline transition-colors">
-                        <UserIcon /> My Profile
-                      </Link>
-                      <Link to="/orders" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 no-underline transition-colors">
-                        <PackageIcon /> My Orders
-                      </Link>
-                      <Link to="/wishlist" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 no-underline transition-colors">
-                        <HeartIcon /> Wishlist
-                      </Link>
-                      {isAdmin && (
-                        <Link to="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 no-underline font-medium transition-colors">
-                          Admin Dashboard
-                        </Link>
-                      )}
-                      {isSeller && (
-                        <Link to="/seller" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 no-underline font-medium transition-colors">
-                          Seller Dashboard
-                        </Link>
-                      )}
-                      <div className="border-t border-gray-100 mt-1">
-                        <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* Profile — direct link */}
+                <Link to="/profile" className="flex flex-col items-center text-white hover:text-orange-400 transition-colors px-2 py-1 rounded no-underline">
+                  <UserIcon />
+                  <span className="text-[10px] mt-0.5 max-w-[70px] truncate">{user.name.split(' ')[0]}</span>
+                </Link>
 
                 {/* Cart */}
                 <Link to="/cart" className="flex flex-col items-center text-white hover:text-orange-400 transition-colors px-2 py-1 rounded no-underline">

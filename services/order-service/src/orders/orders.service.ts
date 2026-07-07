@@ -170,6 +170,16 @@ export class OrdersService {
     return order;
   }
 
+  async cancelOrder(userId: number, orderId: number) {
+    const order = await this.orderRepo.findOne({ where: { id: orderId, userId }, relations: { items: true } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (!['pending', 'confirmed'].includes(order.status)) {
+      throw new BadRequestException('Only pending or confirmed orders can be cancelled');
+    }
+    order.status = OrderStatus.CANCELLED;
+    return this.orderRepo.save(order);
+  }
+
   async getStats() {
     const result = await this.orderRepo
       .createQueryBuilder('o')

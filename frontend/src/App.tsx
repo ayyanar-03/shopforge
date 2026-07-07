@@ -41,8 +41,7 @@ function SellerRoute({ children }: { children: React.ReactNode }) {
 }
 
 function RootRedirect() {
-  const { user } = useAuth();
-  return <Navigate to={user ? '/products' : '/login'} replace />;
+  return <Navigate to="/products" replace />;
 }
 
 function AppShell() {

@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Param, Body, Query, ParseIntPipe, UseGuards, Request, Inject,
+  Controller, Get, Post, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Request, Inject,
 } from '@nestjs/common';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -29,5 +29,10 @@ export class OrdersController {
   @Get(':id')
   getOrder(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.getOrder(id);
+  }
+
+  @Patch(':id/cancel')
+  cancelOrder(@Request() req: Req, @Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.cancelOrder(req.user.id, id);
   }
 }

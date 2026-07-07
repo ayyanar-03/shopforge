@@ -240,7 +240,7 @@ export default function ProductDetailPage() {
               </div>
 
               {product.stock > 0 && (
-                <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                <div className="flex flex-col gap-3 mb-3">
                   <div className="flex items-center border border-gray-300 rounded overflow-hidden w-fit">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -258,13 +258,26 @@ export default function ProductDetailPage() {
                       +
                     </button>
                   </div>
-                  <button
-                    onClick={() => void addToCart()}
-                    disabled={isAdding || !sizeSelected}
-                    className="flex-1 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    {isAdding ? 'Adding to Cart…' : 'Add to Cart'}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => void addToCart()}
+                      disabled={isAdding || !sizeSelected}
+                      className="flex-1 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm"
+                    >
+                      {isAdding ? 'Adding…' : 'Add to Cart'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!user) { navigate('/login'); return; }
+                        if (needsSize && !selectedSize) { setMessage('Please select a size'); return; }
+                        void cartService.addItem(product!.id, quantity).then(() => navigate('/cart'));
+                      }}
+                      disabled={!sizeSelected}
+                      className="flex-1 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm"
+                    >
+                      Buy Now
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -277,12 +290,12 @@ export default function ProductDetailPage() {
               {/* Trust badges */}
               <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-3 text-center">
                 {[
-                  { icon: '🚚', label: 'Free Delivery', sub: 'On orders ₹499+' },
-                  { icon: '↩', label: '7-Day Returns', sub: 'Easy returns' },
-                  { icon: '🔒', label: 'Secure Payment', sub: '100% protected' },
+                  { icon: <svg className="w-5 h-5 mx-auto text-orange-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M5 12H3l9-9 9 9h-2v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7z"/><path d="M9 22V12h6v10"/></svg>, label: 'Free Delivery', sub: 'On orders ₹499+' },
+                  { icon: <svg className="w-5 h-5 mx-auto text-blue-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>, label: '7-Day Returns', sub: 'Easy returns' },
+                  { icon: <svg className="w-5 h-5 mx-auto text-green-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, label: 'Secure Payment', sub: '100% protected' },
                 ].map(({ icon, label, sub }) => (
                   <div key={label} className="text-xs text-gray-600">
-                    <div className="text-lg mb-0.5">{icon}</div>
+                    <div className="mb-0.5 flex justify-center">{icon}</div>
                     <div className="font-semibold text-gray-800 text-xs">{label}</div>
                     <div className="text-gray-400 text-xs">{sub}</div>
                   </div>

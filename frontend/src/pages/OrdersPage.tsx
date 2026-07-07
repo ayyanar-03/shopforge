@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { orderService } from '../services/order.service';
 import { productService } from '../services/product.service';
-import type { Order } from '../types/order.types';
+import type { Order, OrderStatus } from '../types/order.types';
 import { formatINR } from '../utils/currency';
+import { getProductImage } from '../utils/productImage';
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   cod: 'Cash on Delivery',
@@ -10,7 +12,7 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
   razorpay: 'Razorpay',
 };
 
-/* ─── Shipment tracking ─────────────────────────────────────────────────── */
+/* ─── Tracking ──────────────────────────────────────────────────────────── */
 const TRACKING_STEPS = [
   { key: 'pending', label: 'Order Placed' },
   { key: 'confirmed', label: 'Confirmed' },
@@ -19,11 +21,7 @@ const TRACKING_STEPS = [
 ];
 
 const STATUS_TO_STEP: Record<string, number> = {
-  pending: 0,
-  confirmed: 1,
-  shipped: 2,
-  delivered: 3,
-  cancelled: -1,
+  pending: 0, confirmed: 1, shipped: 2, delivered: 3, cancelled: -1,
 };
 
 function ShipmentTracker({ status }: { status: string }) {
@@ -84,7 +82,9 @@ function invoiceNumber(orderId: number, date: string) {
   return `SF/${year}-${String(year + 1).slice(2)}/${String(orderId).padStart(5, '0')}`;
 }
 
-function GSTReceipt({ order, productNames }: { order: Order; productNames: Record<number, string> }) {
+interface ProductInfo { name: string; imageUrl?: string | null; category?: string | null; }
+
+function GSTReceipt({ order, products }: { order: Order; products: Record<number, ProductInfo> }) {
   const totalINR = Math.round(Number(order.total) * 83.5);
   const taxable = Math.round(totalINR / (1 + GST_RATE));
   const totalGst = totalINR - taxable;
@@ -114,7 +114,7 @@ function GSTReceipt({ order, productNames }: { order: Order; productNames: Recor
         <tbody>
           {order.items.map((item) => (
             <tr key={item.id} className="border-b border-gray-100">
-              <td className="py-1 text-gray-700">{productNames[item.productId] ?? `Product ${item.productId}`}</td>
+              <td className="py-1 text-gray-700">{products[item.productId]?.name ?? `Product ${item.productId}`}</td>
               <td className="py-1 text-right text-gray-600">{item.quantity}</td>
               <td className="py-1 text-right text-gray-800 font-medium">{formatINR(Number(item.price) * item.quantity)}</td>
             </tr>
@@ -139,12 +139,71 @@ function GSTReceipt({ order, productNames }: { order: Order; productNames: Recor
   );
 }
 
-/* ─── Main component ────────────────────────────────────────────────────── */
+/* ─── Return Policy Modal ───────────────────────────────────────────────── */
+function ReturnPolicyModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">Return Policy</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="space-y-3 text-sm text-gray-700">
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+            </svg>
+            <div>
+              <p className="font-semibold text-gray-900">7-Day Return Window</p>
+              <p className="text-gray-500">Returns accepted within 7 days of delivery for eligible items.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <div>
+              <p className="font-semibold text-gray-900">Condition</p>
+              <p className="text-gray-500">Items must be unused, in original packaging with tags intact.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+            </svg>
+            <div>
+              <p className="font-semibold text-gray-900">Refund</p>
+              <p className="text-gray-500">Refund processed within 5–7 business days to original payment method.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>
+            </svg>
+            <div>
+              <p className="font-semibold text-gray-900">Non-Returnable</p>
+              <p className="text-gray-500">Perishables, digital goods, and personalised items are not eligible.</p>
+            </div>
+          </div>
+        </div>
+        <p className="mt-4 text-xs text-gray-400">To initiate a return, contact support at support@shopforge.in</p>
+        <button onClick={onClose} className="mt-4 w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors">
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Status ────────────────────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
   confirmed: 'bg-blue-100 text-blue-700 border-blue-200',
   shipped: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  out_for_delivery: 'bg-purple-100 text-purple-700 border-purple-200',
   delivered: 'bg-green-100 text-green-700 border-green-200',
   cancelled: 'bg-red-100 text-red-700 border-red-200',
 };
@@ -155,26 +214,47 @@ const PAYMENT_STATUS_COLOR: Record<string, string> = {
   failed: 'text-red-600',
 };
 
+/* ─── Main ──────────────────────────────────────────────────────────────── */
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [productNames, setProductNames] = useState<Record<number, string>>({});
+  const [products, setProducts] = useState<Record<number, ProductInfo>>({});
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+  const [cancelling, setCancelling] = useState<number | null>(null);
+  const [showReturnPolicy, setShowReturnPolicy] = useState(false);
+
+  const loadOrders = async () => {
+    const data = await orderService.getOrders();
+    setOrders(data);
+    const ids = [...new Set(data.flatMap((o) => o.items.map((i) => i.productId)))];
+    const results = await Promise.allSettled(ids.map((id) => productService.getProduct(id)));
+    const info: Record<number, ProductInfo> = {};
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') {
+        const p = r.value;
+        info[ids[i]] = { name: p.name, imageUrl: p.imageUrl, category: p.category };
+      }
+    });
+    setProducts(info);
+    if (data.length > 0) setExpandedOrder(data[0].id);
+  };
 
   useEffect(() => {
-    orderService
-      .getOrders()
-      .then(async (data) => {
-        setOrders(data);
-        const ids = [...new Set(data.flatMap((o) => o.items.map((i) => i.productId)))];
-        const results = await Promise.allSettled(ids.map((id) => productService.getProduct(id)));
-        const names: Record<number, string> = {};
-        results.forEach((r, i) => { if (r.status === 'fulfilled') names[ids[i]] = r.value.name; });
-        setProductNames(names);
-        if (data.length > 0) setExpandedOrder(data[0].id);
-      })
-      .finally(() => setLoading(false));
+    loadOrders().finally(() => setLoading(false));
   }, []);
+
+  const handleCancel = async (orderId: number) => {
+    if (!confirm('Cancel this order?')) return;
+    setCancelling(orderId);
+    try {
+      const updated = await orderService.cancelOrder(orderId);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: updated.status } : o)));
+    } catch {
+      alert('Could not cancel order. Please try again.');
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   if (loading)
     return (
@@ -188,12 +268,40 @@ export default function OrdersPage() {
 
   return (
     <div className="bg-gray-100 min-h-screen">
+      {showReturnPolicy && <ReturnPolicyModal onClose={() => setShowReturnPolicy(false)} />}
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
           {orders.length > 0 && (
             <span className="text-sm text-gray-500">{orders.length} order{orders.length !== 1 ? 's' : ''}</span>
           )}
+        </div>
+
+        {/* Trust badges */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            {
+              icon: <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M5 12H3l9-9 9 9h-2v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7z"/><path d="M9 22V12h6v10"/></svg>,
+              label: 'Free Delivery', sub: 'On orders ₹499+',
+            },
+            {
+              icon: <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>,
+              label: '7-Day Returns', sub: 'Easy returns',
+            },
+            {
+              icon: <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+              label: 'Secure Payment', sub: '100% protected',
+            },
+          ].map(({ icon, label, sub }) => (
+            <div key={label} className="bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-3">
+              {icon}
+              <div>
+                <p className="text-xs font-semibold text-gray-800">{label}</p>
+                <p className="text-xs text-gray-400">{sub}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {orders.length === 0 ? (
@@ -212,6 +320,8 @@ export default function OrdersPage() {
             {orders.map((order) => {
               const isExpanded = expandedOrder === order.id;
               const orderDate = new Date(order.createdAt);
+              const canCancel = order.status === 'pending' || order.status === 'confirmed';
+              const isDelivered = order.status === 'delivered';
 
               return (
                 <div key={order.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -240,10 +350,27 @@ export default function OrdersPage() {
                           <p className="font-mono font-semibold text-gray-800 text-sm">#{String(order.id).padStart(5, '0')}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${STATUS_BADGE[order.status] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </span>
+                        {canCancel && (
+                          <button
+                            onClick={() => void handleCancel(order.id)}
+                            disabled={cancelling === order.id}
+                            className="text-xs text-red-600 border border-red-200 hover:bg-red-50 font-medium px-2.5 py-1 rounded-full transition-colors disabled:opacity-60"
+                          >
+                            {cancelling === order.id ? 'Cancelling…' : 'Cancel Order'}
+                          </button>
+                        )}
+                        {isDelivered && (
+                          <button
+                            onClick={() => setShowReturnPolicy(true)}
+                            className="text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 font-medium px-2.5 py-1 rounded-full transition-colors"
+                          >
+                            Return Policy
+                          </button>
+                        )}
                         <button
                           onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                           className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors"
@@ -256,20 +383,41 @@ export default function OrdersPage() {
 
                   {/* Order items summary */}
                   <div className="px-5 py-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {order.items.slice(0, isExpanded ? undefined : 2).map((item) => (
-                          <div key={item.id} className="flex items-center gap-2 py-1 text-sm">
-                            <div className="w-2 h-2 bg-orange-400 rounded-full shrink-0" />
-                            <span className="text-gray-700">{productNames[item.productId] ?? `Product ${item.productId}`}</span>
-                            <span className="text-gray-400">× {item.quantity}</span>
-                            <span className="ml-auto font-medium text-gray-900">{formatINR(Number(item.price) * item.quantity)}</span>
+                    <div className="space-y-3">
+                      {order.items.slice(0, isExpanded ? undefined : 2).map((item) => {
+                        const prod = products[item.productId];
+                        const imgSrc = getProductImage({
+                          id: item.productId,
+                          price: Number(item.price),
+                          imageUrl: prod?.imageUrl,
+                          category: prod?.category ?? undefined,
+                        });
+                        return (
+                          <div key={item.id} className="flex items-center gap-3">
+                            <Link to={`/products/${item.productId}`} className="shrink-0">
+                              <img
+                                src={imgSrc}
+                                alt={prod?.name ?? 'Product'}
+                                className="w-14 h-14 object-cover rounded-lg border border-gray-100"
+                              />
+                            </Link>
+                            <div className="flex-1 min-w-0">
+                              <Link to={`/products/${item.productId}`} className="no-underline">
+                                <p className="text-sm font-medium text-gray-900 hover:text-orange-600 transition-colors line-clamp-1">
+                                  {prod?.name ?? `Product ${item.productId}`}
+                                </p>
+                              </Link>
+                              <p className="text-xs text-gray-400 mt-0.5">Qty: {item.quantity}</p>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900 shrink-0">
+                              {formatINR(Number(item.price) * item.quantity)}
+                            </span>
                           </div>
-                        ))}
-                        {!isExpanded && order.items.length > 2 && (
-                          <p className="text-xs text-gray-400 ml-4 mt-1">+{order.items.length - 2} more item{order.items.length - 2 > 1 ? 's' : ''}</p>
-                        )}
-                      </div>
+                        );
+                      })}
+                      {!isExpanded && order.items.length > 2 && (
+                        <p className="text-xs text-gray-400 mt-1">+{order.items.length - 2} more item{order.items.length - 2 > 1 ? 's' : ''}</p>
+                      )}
                     </div>
                   </div>
 
@@ -294,7 +442,7 @@ export default function OrdersPage() {
                       <div className="py-4 border-b border-gray-100">
                         <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Shipment Tracking</p>
                         <ShipmentTracker status={order.status} />
-                        {order.status === 'delivered' && (
+                        {isDelivered && (
                           <p className="text-xs text-green-600 font-medium mt-2 text-center">
                             Delivered on {orderDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                           </p>
@@ -309,7 +457,7 @@ export default function OrdersPage() {
                       {/* GST Receipt */}
                       <div>
                         <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mt-3 mb-1">GST Invoice</p>
-                        <GSTReceipt order={order} productNames={productNames} />
+                        <GSTReceipt order={order} products={products} />
                       </div>
                     </div>
                   )}

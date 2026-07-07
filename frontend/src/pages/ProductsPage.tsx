@@ -51,7 +51,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState(searchParams.get('category') ?? '');
@@ -170,7 +170,8 @@ export default function ProductsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="flex gap-6">
           {/* Sidebar filter */}
-          <aside className={`shrink-0 w-56 ${showFilters ? 'block' : 'hidden'} md:block`}>
+          {showFilters && (
+          <aside className="shrink-0 w-56">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-20">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900">Filters</h3>
@@ -182,30 +183,27 @@ export default function ProductsPage() {
               </div>
 
               {/* Category filter */}
-              <div className="border-b border-gray-100 px-4 py-3">
+              <div className="border-b border-gray-100 px-3 py-3">
                 <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Category</h4>
-                <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-                  <label className="flex items-center gap-2 cursor-pointer py-0.5">
-                    <input
-                      type="radio"
-                      name="category"
-                      checked={category === ''}
-                      onChange={() => setCategory('')}
-                      className="accent-orange-500"
-                    />
-                    <span className={`text-sm ${category === '' ? 'text-orange-600 font-semibold' : 'text-gray-700'}`}>All Categories</span>
-                  </label>
+                <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => setCategory('')}
+                    className={`w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                      category === '' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    All Categories
+                  </button>
                   {CATEGORIES.map((c) => (
-                    <label key={c} className="flex items-center gap-2 cursor-pointer py-0.5">
-                      <input
-                        type="radio"
-                        name="category"
-                        checked={category === c}
-                        onChange={() => setCategory(c)}
-                        className="accent-orange-500"
-                      />
-                      <span className={`text-sm ${category === c ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>{c}</span>
-                    </label>
+                    <button
+                      key={c}
+                      onClick={() => setCategory(c === category ? '' : c)}
+                      className={`w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
+                        category === c ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {c}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -254,6 +252,7 @@ export default function ProductsPage() {
               </div>
             </div>
           </aside>
+          )}
 
           {/* Products grid */}
           <div className="flex-1 min-w-0">

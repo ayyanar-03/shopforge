@@ -5,6 +5,9 @@ export const orderService = {
   getOrders: () =>
     api.get<PagedOrders>('/api/orders').then((r) => r.data.data),
 
+  cancelOrder: (orderId: number) =>
+    api.patch<Order>(`/api/orders/${orderId}/cancel`).then((r) => r.data),
+
   getAdminOrders: (page: number, limit = 20) =>
     api.get<PagedOrders>('/api/admin/orders', { params: { page, limit } }).then((r) => r.data),
 
