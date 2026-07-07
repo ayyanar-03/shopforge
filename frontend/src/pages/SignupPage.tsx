@@ -44,7 +44,7 @@ export default function SignupPage() {
           <span className="text-white font-bold text-2xl tracking-tight">ShopForge</span>
         </div>
         <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
-          Join millions of<br />happy shoppers
+          <br />happy shoppers
         </h1>
         <p className="text-gray-400 text-base mb-8">
           Create your account and start exploring the best deals.
