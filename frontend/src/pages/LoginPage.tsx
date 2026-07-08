@@ -42,7 +42,6 @@ export default function LoginPage() {
           </svg>
           <span className="text-white font-bold text-2xl tracking-tight">ShopForge</span>
         </div>
-        </div>
       </div>
 
       {/* Right login panel */}
