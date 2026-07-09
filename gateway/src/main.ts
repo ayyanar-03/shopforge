@@ -32,10 +32,14 @@ function makeProxy(target: string) {
   });
 }
 
+const CORS_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim());
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
-  app.enableCors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' });
+  app.enableCors({ origin: CORS_ORIGINS });
 
   const http = app.getHttpAdapter().getInstance() as import('express').Express;
 
