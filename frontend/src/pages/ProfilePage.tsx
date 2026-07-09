@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/auth.service';
 
@@ -121,11 +121,13 @@ export default function ProfilePage() {
           <div>
             <p className="font-semibold text-gray-900">{profile?.name}</p>
             <p className="text-sm text-gray-500">{profile?.email}</p>
-            <span
-              className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize mt-1 inline-block ${ROLE_BADGE[profile?.role ?? 'buyer']}`}
-            >
-              {profile?.role}
-            </span>
+            {profile?.role && profile.role !== 'buyer' && (
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize mt-1 inline-block ${ROLE_BADGE[profile.role]}`}
+              >
+                {profile.role}
+              </span>
+            )}
           </div>
         </div>
 
@@ -138,6 +140,15 @@ export default function ProfilePage() {
               })
             : ''}
         </p>
+
+        {profile?.role === 'admin' && (
+          <Link
+            to="/admin"
+            className="mt-4 inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 no-underline transition-colors"
+          >
+            Admin Dashboard
+          </Link>
+        )}
       </div>
 
       {/* Update name */}
