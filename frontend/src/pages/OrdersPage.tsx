@@ -392,21 +392,30 @@ export default function OrdersPage() {
             },
             {
               icon: <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>,
-              label: '7-Day Returns', sub: 'Easy returns',
+              label: '7-Day Returns', sub: 'Easy returns', onClick: () => setShowReturnPolicy(true),
             },
             {
               icon: <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
               label: 'Secure Payment', sub: '100% protected',
             },
-          ].map(({ icon, label, sub }) => (
-            <div key={label} className="bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-3">
-              {icon}
-              <div>
-                <p className="text-xs font-semibold text-gray-800">{label}</p>
-                <p className="text-xs text-gray-400">{sub}</p>
-              </div>
-            </div>
-          ))}
+          ].map(({ icon, label, sub, onClick }) => {
+            const Tag = onClick ? 'button' : 'div';
+            return (
+              <Tag
+                key={label}
+                onClick={onClick}
+                className={`bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-3 text-left w-full ${
+                  onClick ? 'hover:border-blue-300 hover:bg-blue-50/40 transition-colors cursor-pointer' : ''
+                }`}
+              >
+                {icon}
+                <div>
+                  <p className="text-xs font-semibold text-gray-800">{label}</p>
+                  <p className="text-xs text-gray-400">{sub}</p>
+                </div>
+              </Tag>
+            );
+          })}
         </div>
 
         {orders.length === 0 ? (
@@ -466,14 +475,6 @@ export default function OrdersPage() {
                             className="text-xs text-red-600 border border-red-200 hover:bg-red-50 font-medium px-2.5 py-1 rounded-full transition-colors disabled:opacity-60"
                           >
                             {cancelling === order.id ? 'Cancelling…' : 'Cancel Order'}
-                          </button>
-                        )}
-                        {isDelivered && (
-                          <button
-                            onClick={() => setShowReturnPolicy(true)}
-                            className="text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 font-medium px-2.5 py-1 rounded-full transition-colors"
-                          >
-                            Return Policy
                           </button>
                         )}
                         {isDelivered && (
