@@ -33,14 +33,6 @@ const SORT_OPTIONS = [
   { value: 'name:DESC', label: 'Name: Z–A' },
 ];
 
-function FilterIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  );
-}
-
 export default function ProductsPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,7 +43,6 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
-  const [showFilters, setShowFilters] = useState(true);
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState(searchParams.get('category') ?? '');
@@ -143,16 +134,6 @@ export default function ProductsPage() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-md font-medium transition-colors ${
-                  showFilters ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <FilterIcon />
-                Filters
-                {hasActiveFilter && <span className="w-2 h-2 rounded-full bg-red-500" />}
-              </button>
               <select
                 value={`${sortBy}:${sortOrder}`}
                 onChange={(e) => { const [sb, so] = e.target.value.split(':'); setSortBy(sb); setSortOrder(so); }}
@@ -170,7 +151,6 @@ export default function ProductsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="flex gap-6">
           {/* Sidebar filter */}
-          {showFilters && (
           <aside className="shrink-0 w-56">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-20">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -252,7 +232,6 @@ export default function ProductsPage() {
               </div>
             </div>
           </aside>
-          )}
 
           {/* Products grid */}
           <div className="flex-1 min-w-0">
