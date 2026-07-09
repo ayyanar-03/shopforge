@@ -66,7 +66,7 @@ export default function AdminOrdersPage() {
                     className="flex items-center gap-4 text-left flex-1 hover:opacity-80"
                   >
                     <span className="font-semibold text-gray-900">#{o.id}</span>
-                    <span className="text-sm text-gray-600">User #{o.userId}</span>
+                    <span className="text-sm text-gray-600">{o.user ? o.user.name : `User #${o.userId}`}</span>
                     <span className="font-bold text-gray-900 ml-auto mr-4">
                       {formatINR(Number(o.total))}
                     </span>

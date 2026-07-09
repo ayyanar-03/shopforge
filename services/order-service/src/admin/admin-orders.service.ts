@@ -45,7 +45,14 @@ export class AdminOrdersService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+
+    const userIds = [...new Set(data.map((o) => o.userId))];
+    const users = await Promise.all(userIds.map((id) => this.catalog.getUser(id)));
+    const usersById = new Map(users.filter(Boolean).map((u) => [u!.id, u!]));
+
+    const enriched = data.map((o) => ({ ...o, user: usersById.get(o.userId) ?? null }));
+
+    return { data: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async updateStatus(id: number, status: OrderStatus) {

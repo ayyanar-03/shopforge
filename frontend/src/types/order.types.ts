@@ -22,7 +22,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   createdAt: string;
   items: OrderItem[];
-  user?: { name: string; email: string };
+  user?: { id: number; name: string; email: string } | null;
 }
 
 export interface PagedOrders {
