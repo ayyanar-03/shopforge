@@ -320,7 +320,7 @@ export default function OrdersPage() {
             {orders.map((order) => {
               const isExpanded = expandedOrder === order.id;
               const orderDate = new Date(order.createdAt);
-              const canCancel = order.status === 'pending' || order.status === 'confirmed';
+              const canCancel = order.status === 'pending';
               const isDelivered = order.status === 'delivered';
 
               return (
