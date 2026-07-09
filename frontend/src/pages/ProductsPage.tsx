@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { productService } from '../services/product.service';
 import { wishlistService } from '../services/wishlist.service';
@@ -55,6 +55,23 @@ export default function ProductsPage() {
   const debouncedQuery = useDebounce(query, 350);
   const hasActiveFilter = !!(debouncedQuery || category || minPrice || maxPrice);
 
+  // Tracks the last URL we wrote ourselves, so we can tell external navigation
+  // (e.g. clicking a category link elsewhere) apart from our own writes below.
+  const lastSyncedSearch = useRef(searchParams.toString());
+
+  useEffect(() => {
+    const current = searchParams.toString();
+    if (current === lastSyncedSearch.current) return;
+    lastSyncedSearch.current = current;
+    setQuery(searchParams.get('q') ?? '');
+    setCategory(searchParams.get('category') ?? '');
+    setMinPrice(searchParams.get('minPrice') ?? '');
+    setMaxPrice(searchParams.get('maxPrice') ?? '');
+    setSortBy(searchParams.get('sortBy') ?? 'createdAt');
+    setSortOrder(searchParams.get('sortOrder') ?? 'DESC');
+    setPage(Number(searchParams.get('page') ?? 1));
+  }, [searchParams]);
+
   useEffect(() => {
     if (!user) { setWishlistIds(new Set()); return; }
     wishlistService.getWishlist().then((p) => setWishlistIds(new Set(p.map((x) => x.id))));
@@ -92,6 +109,7 @@ export default function ProductsPage() {
     if (sortBy !== 'createdAt') p.set('sortBy', sortBy);
     if (sortOrder !== 'DESC') p.set('sortOrder', sortOrder);
     if (page > 1) p.set('page', String(page));
+    lastSyncedSearch.current = p.toString();
     setSearchParams(p, { replace: true });
   }, [debouncedQuery, category, minPrice, maxPrice, sortBy, sortOrder, page, fetchProducts, setSearchParams]);
 
