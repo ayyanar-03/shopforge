@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { orderService } from '../services/order.service';
 import { productService } from '../services/product.service';
-import type { Order, OrderStatus } from '../types/order.types';
+import type { Order } from '../types/order.types';
 import { formatINR } from '../utils/currency';
 import { getProductImage } from '../utils/productImage';
 
