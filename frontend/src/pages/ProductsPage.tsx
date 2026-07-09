@@ -5,7 +5,7 @@ import { wishlistService } from '../services/wishlist.service';
 import type { Product, ProductSearchParams } from '../types/product.types';
 import { useAuth } from '../context/AuthContext';
 import { getProductImage } from '../utils/productImage';
-import { formatINR, inrToUsd } from '../utils/currency';
+import { formatINR } from '../utils/currency';
 import StarRating from '../components/StarRating';
 import HeartButton from '../components/HeartButton';
 
@@ -33,14 +33,6 @@ const SORT_OPTIONS = [
   { value: 'name:DESC', label: 'Name: Z–A' },
 ];
 
-function FilterIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  );
-}
-
 export default function ProductsPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,18 +43,15 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
-  const [showFilters, setShowFilters] = useState(true);
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState(searchParams.get('category') ?? '');
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') ?? '');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') ?? '');
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'createdAt');
   const [sortOrder, setSortOrder] = useState(searchParams.get('sortOrder') ?? 'DESC');
   const [page, setPage] = useState(Number(searchParams.get('page') ?? 1));
 
   const debouncedQuery = useDebounce(query, 350);
-  const hasActiveFilter = !!(debouncedQuery || category || minPrice || maxPrice);
+  const hasActiveFilter = !!(debouncedQuery || category);
 
   useEffect(() => {
     if (!user) { setWishlistIds(new Set()); return; }
@@ -76,8 +65,6 @@ export default function ProductsPage() {
       const sp: Record<string, string | number> = { sortBy, sortOrder, page, limit: PAGE_SIZE };
       if (debouncedQuery) sp.q = debouncedQuery;
       if (category) sp.category = category;
-      if (minPrice) sp.minPrice = inrToUsd(Number(minPrice));
-      if (maxPrice) sp.maxPrice = inrToUsd(Number(maxPrice));
       const data = await productService.searchProducts(sp as ProductSearchParams);
       setProducts(data.data ?? []);
       setTotal(data.total ?? 0);
@@ -87,25 +74,23 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedQuery, category, minPrice, maxPrice, sortBy, sortOrder, page]);
+  }, [debouncedQuery, category, sortBy, sortOrder, page]);
 
-  useEffect(() => { setPage(1); }, [debouncedQuery, category, minPrice, maxPrice, sortBy, sortOrder]);
+  useEffect(() => { setPage(1); }, [debouncedQuery, category, sortBy, sortOrder]);
 
   useEffect(() => {
     void fetchProducts();
     const p = new URLSearchParams();
     if (debouncedQuery) p.set('q', debouncedQuery);
     if (category) p.set('category', category);
-    if (minPrice) p.set('minPrice', minPrice);
-    if (maxPrice) p.set('maxPrice', maxPrice);
     if (sortBy !== 'createdAt') p.set('sortBy', sortBy);
     if (sortOrder !== 'DESC') p.set('sortOrder', sortOrder);
     if (page > 1) p.set('page', String(page));
     setSearchParams(p, { replace: true });
-  }, [debouncedQuery, category, minPrice, maxPrice, sortBy, sortOrder, page, fetchProducts, setSearchParams]);
+  }, [debouncedQuery, category, sortBy, sortOrder, page, fetchProducts, setSearchParams]);
 
   const clearFilters = () => {
-    setQuery(''); setCategory(''); setMinPrice(''); setMaxPrice('');
+    setQuery(''); setCategory('');
     setSortBy('createdAt'); setSortOrder('DESC'); setPage(1);
   };
 
@@ -143,16 +128,16 @@ export default function ProductsPage() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-md font-medium transition-colors ${
-                  showFilters ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-gray-700"
               >
-                <FilterIcon />
-                Filters
-                {hasActiveFilter && <span className="w-2 h-2 rounded-full bg-red-500" />}
-              </button>
+                <option value="">All Categories</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
               <select
                 value={`${sortBy}:${sortOrder}`}
                 onChange={(e) => { const [sb, so] = e.target.value.split(':'); setSortBy(sb); setSortOrder(so); }}
@@ -162,98 +147,17 @@ export default function ProductsPage() {
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
+              {hasActiveFilter && (
+                <button onClick={clearFilters} className="text-xs text-orange-500 font-medium hover:text-orange-600 whitespace-nowrap">
+                  Clear all
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex gap-6">
-          {/* Sidebar filter */}
-          {showFilters && (
-          <aside className="shrink-0 w-56">
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-20">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h3 className="text-sm font-bold text-gray-900">Filters</h3>
-                {hasActiveFilter && (
-                  <button onClick={clearFilters} className="text-xs text-orange-500 font-medium hover:text-orange-600">
-                    Clear all
-                  </button>
-                )}
-              </div>
-
-              {/* Category filter */}
-              <div className="border-b border-gray-100 px-3 py-3">
-                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Category</h4>
-                <div className="space-y-0.5 max-h-64 overflow-y-auto">
-                  <button
-                    onClick={() => setCategory('')}
-                    className={`w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
-                      category === '' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    All Categories
-                  </button>
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCategory(c === category ? '' : c)}
-                      className={`w-full text-left px-2 py-1.5 text-sm rounded transition-colors ${
-                        category === c ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Price filter */}
-              <div className="px-4 py-3">
-                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Price Range (₹)</h4>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="Min"
-                    min={0}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
-                  <span className="text-gray-400 self-center text-sm">–</span>
-                  <input
-                    type="number"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="Max"
-                    min={0}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
-                </div>
-                {/* Quick price ranges */}
-                <div className="mt-2 space-y-1">
-                  {[
-                    { label: 'Under ₹500', min: '', max: '500' },
-                    { label: '₹500 – ₹2,000', min: '500', max: '2000' },
-                    { label: '₹2,000 – ₹10,000', min: '2000', max: '10000' },
-                    { label: 'Over ₹10,000', min: '10000', max: '' },
-                  ].map(({ label, min, max }) => (
-                    <button
-                      key={label}
-                      onClick={() => { setMinPrice(min); setMaxPrice(max); }}
-                      className={`text-xs block w-full text-left py-0.5 hover:text-orange-500 transition-colors ${
-                        minPrice === min && maxPrice === max ? 'text-orange-500 font-medium' : 'text-gray-600'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-          )}
-
           {/* Products grid */}
           <div className="flex-1 min-w-0">
             {/* Active filter pills */}
@@ -269,18 +173,6 @@ export default function ProductsPage() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200 font-medium">
                     {category}
                     <button onClick={() => setCategory('')} className="ml-0.5 hover:text-blue-900">×</button>
-                  </span>
-                )}
-                {minPrice && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border border-gray-300 font-medium">
-                    Min ₹{minPrice}
-                    <button onClick={() => setMinPrice('')} className="ml-0.5 hover:text-gray-900">×</button>
-                  </span>
-                )}
-                {maxPrice && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border border-gray-300 font-medium">
-                    Max ₹{maxPrice}
-                    <button onClick={() => setMaxPrice('')} className="ml-0.5 hover:text-gray-900">×</button>
                   </span>
                 )}
               </div>
@@ -428,7 +320,6 @@ export default function ProductsPage() {
               </>
             )}
           </div>
-        </div>
       </div>
     </div>
   );

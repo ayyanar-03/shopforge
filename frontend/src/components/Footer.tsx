@@ -58,7 +58,6 @@ export default function Footer() {
             <div className="text-xs text-gray-600 space-y-1">
               <p>CIN: L74999MH2023PLC000001</p>
               <p>GSTIN: 27AABCS1429B1ZB</p>
-              <p>Registered in Mumbai, Maharashtra</p>
             </div>
           </div>
 
