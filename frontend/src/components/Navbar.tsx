@@ -151,7 +151,7 @@ export default function Navbar() {
       </div>
 
       {/* Category strip */}
-      <div className="bg-[#232323] hidden md:block">
+      <div className="bg-[#232323]">
         <div className="max-w-7xl mx-auto px-4 flex gap-0 overflow-x-auto scrollbar-hide">
           {CATEGORIES.map((cat) => (
             <Link

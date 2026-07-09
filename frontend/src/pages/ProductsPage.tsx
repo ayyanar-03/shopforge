@@ -231,10 +231,10 @@ export default function ProductsPage() {
                 {/* Quick price ranges */}
                 <div className="mt-2 space-y-1">
                   {[
-                    { label: 'Under ₹500', min: '', max: '500' },
-                    { label: '₹500 – ₹2,000', min: '500', max: '2000' },
-                    { label: '₹2,000 – ₹10,000', min: '2000', max: '10000' },
-                    { label: 'Over ₹10,000', min: '10000', max: '' },
+                    { label: 'Under ₹2,000', min: '', max: '2000' },
+                    { label: '₹2,000 – ₹8,000', min: '2000', max: '8000' },
+                    { label: '₹8,000 – ₹25,000', min: '8000', max: '25000' },
+                    { label: 'Over ₹25,000', min: '25000', max: '' },
                   ].map(({ label, min, max }) => (
                     <button
                       key={label}
