@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { orderService } from '../../services/order.service';
 import type { PagedReturnRequests } from '../../types/order.types';
+import { getProductImage } from '../../utils/productImage';
 
 const statusStyle: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -29,7 +30,7 @@ export default function AdminReturnsPage() {
       const updated = await orderService.verifyReturnRequest(id, status);
       setPaged((prev) =>
         prev
-          ? { ...prev, data: prev.data.map((r) => (r.id === id ? updated : r)) }
+          ? { ...prev, data: prev.data.map((r) => (r.id === id ? { ...r, ...updated } : r)) }
           : prev,
       );
     } finally {
@@ -50,41 +51,64 @@ export default function AdminReturnsPage() {
           <div className="space-y-3">
             {paged.data.map((r) => (
               <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-gray-900">Order #{r.orderId}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusStyle[r.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">User #{r.userId}</p>
-                    <p className="text-sm text-gray-900 font-medium mt-2">{r.reason}</p>
-                    {r.details && <p className="text-sm text-gray-500 mt-1">{r.details}</p>}
-                    <p className="text-xs text-gray-400 mt-2">
-                      {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
-                  </div>
-
-                  {r.status === 'pending' && (
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => void handleVerify(r.id, 'approved')}
-                        disabled={verifying === r.id}
-                        className="text-xs text-green-700 border border-green-200 hover:bg-green-50 font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => void handleVerify(r.id, 'rejected')}
-                        disabled={verifying === r.id}
-                        className="text-xs text-red-600 border border-red-200 hover:bg-red-50 font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="font-semibold text-gray-900">Order #{r.orderId}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusStyle[r.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-auto">
+                    {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
                 </div>
+
+                {/* Ordered item(s) with Approve/Reject */}
+                <div className="space-y-2">
+                  {(r.items.length ? r.items : [null]).map((item, i) => (
+                    <div
+                      key={item ? item.productId : i}
+                      className="flex items-center gap-3 border border-gray-100 rounded-lg p-2"
+                    >
+                      <img
+                        src={
+                          item?.product
+                            ? getProductImage(item.product)
+                            : getProductImage({ id: item?.productId ?? r.orderId, price: 0 })
+                        }
+                        alt={item?.product?.name ?? 'Product'}
+                        className="w-14 h-14 rounded-md object-cover border border-gray-200 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {item?.product?.name ?? `Product #${item?.productId ?? '—'}`}
+                        </p>
+                        {item && <p className="text-xs text-gray-500">Qty: {item.quantity}</p>}
+                      </div>
+
+                      {r.status === 'pending' && (
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => void handleVerify(r.id, 'approved')}
+                            disabled={verifying === r.id}
+                            className="text-xs text-green-700 border border-green-200 hover:bg-green-50 font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => void handleVerify(r.id, 'rejected')}
+                            disabled={verifying === r.id}
+                            className="text-xs text-red-600 border border-red-200 hover:bg-red-50 font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-sm text-gray-600 mt-3">User #{r.userId}</p>
+                <p className="text-sm text-gray-900 font-medium mt-1">{r.reason}</p>
+                {r.details && <p className="text-sm text-gray-500 mt-1">{r.details}</p>}
               </div>
             ))}
           </div>

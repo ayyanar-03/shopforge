@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { ReturnRequest, ReturnRequestStatus } from './entities/return-request.entity';
 import { Order } from '../orders/entities/order.entity';
 import { CreateReturnRequestDto } from './dto/create-return-request.dto';
+import { CatalogClientService } from '../catalog-client/catalog-client.service';
 
 @Injectable()
 export class ReturnsService {
   constructor(
     @InjectRepository(ReturnRequest) private readonly returnRepo: Repository<ReturnRequest>,
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    private readonly catalog: CatalogClientService,
   ) {}
 
   async createReturnRequest(userId: number, orderId: number, dto: CreateReturnRequestDto) {
@@ -39,7 +41,28 @@ export class ReturnsService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+
+    const orderIds = [...new Set(data.map((r) => r.orderId))];
+    const orders = await this.orderRepo.find({
+      where: orderIds.map((id) => ({ id })),
+      relations: { items: true },
+    });
+    const ordersById = new Map(orders.map((o) => [o.id, o]));
+
+    const productIds = [...new Set(orders.flatMap((o) => o.items.map((i) => i.productId)))];
+    const products = await Promise.all(productIds.map((id) => this.catalog.getProduct(id)));
+    const productsById = new Map(products.filter(Boolean).map((p) => [p!.id, p!]));
+
+    const enriched = data.map((r) => ({
+      ...r,
+      items: (ordersById.get(r.orderId)?.items ?? []).map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        product: productsById.get(i.productId) ?? null,
+      })),
+    }));
+
+    return { data: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async verifyReturnRequest(id: number, status: 'approved' | 'rejected') {

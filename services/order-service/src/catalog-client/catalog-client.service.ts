@@ -15,6 +15,7 @@ export interface ProductDto {
   price: number;
   stock: number;
   sellerId: number;
+  imageUrl?: string;
 }
 
 export interface UserDto {

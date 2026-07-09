@@ -34,6 +34,12 @@ export interface PagedOrders {
 
 export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected';
 
+export interface ReturnRequestItem {
+  productId: number;
+  quantity: number;
+  product: { id: number; name: string; price: number; imageUrl?: string } | null;
+}
+
 export interface ReturnRequest {
   id: number;
   orderId: number;
@@ -42,6 +48,7 @@ export interface ReturnRequest {
   details: string | null;
   status: ReturnRequestStatus;
   createdAt: string;
+  items: ReturnRequestItem[];
 }
 
 export interface PagedReturnRequests {
