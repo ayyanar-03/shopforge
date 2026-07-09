@@ -199,6 +199,94 @@ function ReturnPolicyModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/* ─── Return Request Modal ──────────────────────────────────────────────── */
+const RETURN_REASONS = [
+  'Item damaged or defective',
+  'Wrong item received',
+  'Item not as described',
+  'No longer needed',
+  'Other',
+];
+
+function ReturnRequestModal({ onClose }: { onClose: () => void }) {
+  const [reason, setReason] = useState(RETURN_REASONS[0]);
+  const [details, setDetails] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  if (submitted) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center">
+          <svg className="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" />
+          </svg>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Return Request Submitted</h2>
+          <p className="text-sm text-gray-600">
+            Our team will collect your item, and the amount will be refunded within 24 hours after receiving the product.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-5 w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">Request Return</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSubmitted(true);
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Why are you returning this?</label>
+            <select
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              {RETURN_REASONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Additional details (optional)</label>
+            <textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              rows={3}
+              placeholder="Tell us more…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors"
+          >
+            Submit Return Request
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Status ────────────────────────────────────────────────────────────── */
 const STATUS_BADGE: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -222,6 +310,7 @@ export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState<number | null>(null);
   const [showReturnPolicy, setShowReturnPolicy] = useState(false);
+  const [returnOrderId, setReturnOrderId] = useState<number | null>(null);
 
   const loadOrders = async () => {
     const data = await orderService.getOrders();
@@ -269,6 +358,7 @@ export default function OrdersPage() {
   return (
     <div className="bg-gray-100 min-h-screen">
       {showReturnPolicy && <ReturnPolicyModal onClose={() => setShowReturnPolicy(false)} />}
+      {returnOrderId !== null && <ReturnRequestModal onClose={() => setReturnOrderId(null)} />}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -369,6 +459,14 @@ export default function OrdersPage() {
                             className="text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 font-medium px-2.5 py-1 rounded-full transition-colors"
                           >
                             Return Policy
+                          </button>
+                        )}
+                        {isDelivered && (
+                          <button
+                            onClick={() => setReturnOrderId(order.id)}
+                            className="text-xs text-orange-600 border border-orange-200 hover:bg-orange-50 font-medium px-2.5 py-1 rounded-full transition-colors"
+                          >
+                            Return
                           </button>
                         )}
                         <button
