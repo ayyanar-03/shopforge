@@ -106,7 +106,7 @@ export default function AdminReturnsPage() {
                   ))}
                 </div>
 
-                <p className="text-sm text-gray-600 mt-3">User #{r.userId}</p>
+                <p className="text-sm text-gray-600 mt-3">{r.user ? r.user.name : `User #${r.userId}`}</p>
                 <p className="text-sm text-gray-900 font-medium mt-1">{r.reason}</p>
                 {r.details && <p className="text-sm text-gray-500 mt-1">{r.details}</p>}
               </div>

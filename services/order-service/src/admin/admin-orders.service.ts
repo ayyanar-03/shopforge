@@ -12,17 +12,29 @@ export class AdminOrdersService {
   ) {}
 
   async getStats() {
-    const [orderStats, catalogStats] = await Promise.all([
+    const [orderStats, statusRows, catalogStats] = await Promise.all([
       this.orderRepo
         .createQueryBuilder('o')
         .select(['COUNT(*) AS totalorders', 'COALESCE(SUM(o.total), 0) AS totalrevenue'])
         .getRawOne<{ totalorders: string; totalrevenue: string }>(),
+      this.orderRepo
+        .createQueryBuilder('o')
+        .select(['o.status AS status', 'COUNT(*) AS count'])
+        .groupBy('o.status')
+        .getRawMany<{ status: string; count: string }>(),
       this.catalog.getCatalogStats(),
     ]);
+
+    const countByStatus = new Map(statusRows.map((r) => [r.status, parseInt(r.count, 10)]));
+    const ordersByStatus = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map(
+      (status) => ({ status, count: countByStatus.get(status) ?? 0 }),
+    );
+
     return {
       ...catalogStats,
       totalOrders: parseInt(orderStats?.totalorders ?? '0', 10),
       totalRevenue: parseFloat(orderStats?.totalrevenue ?? '0'),
+      ordersByStatus,
     };
   }
 

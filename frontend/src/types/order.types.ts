@@ -49,6 +49,7 @@ export interface ReturnRequest {
   status: ReturnRequestStatus;
   createdAt: string;
   items: ReturnRequestItem[];
+  user: { id: number; name: string; email: string } | null;
 }
 
 export interface PagedReturnRequests {

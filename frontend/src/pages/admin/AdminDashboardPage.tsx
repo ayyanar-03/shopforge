@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { adminService } from '../../services/admin.service';
 import type { AdminStats } from '../../types/user.types';
 import { formatINR } from '../../utils/currency';
+import OrderStatusChart from '../../components/OrderStatusChart';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -37,14 +38,22 @@ export default function AdminDashboardPage() {
       {loading ? (
         <p className="text-gray-500 text-sm">Loading...</p>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((c) => (
-            <div key={c.label} className={`rounded-xl p-5 ${c.color}`}>
-              <p className="text-sm font-medium opacity-75">{c.label}</p>
-              <p className="text-3xl font-bold mt-1">{c.value}</p>
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {cards.map((c) => (
+              <div key={c.label} className={`rounded-xl p-5 ${c.color}`}>
+                <p className="text-sm font-medium opacity-75">{c.label}</p>
+                <p className="text-3xl font-bold mt-1">{c.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {stats && (
+            <div className="mt-6">
+              <OrderStatusChart data={stats.ordersByStatus} />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

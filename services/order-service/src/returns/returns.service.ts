@@ -53,8 +53,13 @@ export class ReturnsService {
     const products = await Promise.all(productIds.map((id) => this.catalog.getProduct(id)));
     const productsById = new Map(products.filter(Boolean).map((p) => [p!.id, p!]));
 
+    const userIds = [...new Set(data.map((r) => r.userId))];
+    const users = await Promise.all(userIds.map((id) => this.catalog.getUser(id)));
+    const usersById = new Map(users.filter(Boolean).map((u) => [u!.id, u!]));
+
     const enriched = data.map((r) => ({
       ...r,
+      user: usersById.get(r.userId) ?? null,
       items: (ordersById.get(r.orderId)?.items ?? []).map((i) => ({
         productId: i.productId,
         quantity: i.quantity,

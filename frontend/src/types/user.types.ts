@@ -13,9 +13,15 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface OrderStatusCount {
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  count: number;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalProducts: number;
   totalOrders: number;
   totalRevenue: number;
+  ordersByStatus: OrderStatusCount[];
 }
