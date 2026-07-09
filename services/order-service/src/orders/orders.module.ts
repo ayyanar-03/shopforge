@@ -10,6 +10,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { AuthModule } from '../auth/auth.module';
 import { NOTIFICATION_QUEUE, INVENTORY_QUEUE } from '../queue/queue.module';
 import { ORDERS_SERVICE } from './orders.service.interface';
+import { ReturnsModule } from '../returns/returns.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ORDERS_SERVICE } from './orders.service.interface';
     CatalogClientModule,
     PaymentsModule,
     AuthModule,
+    ReturnsModule,
   ],
   controllers: [OrdersController],
   providers: [{ provide: ORDERS_SERVICE, useClass: OrdersService }],

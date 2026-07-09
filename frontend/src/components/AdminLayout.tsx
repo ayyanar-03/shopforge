@@ -5,6 +5,7 @@ const links = [
   { to: '/admin/products', label: 'Products', end: false },
   { to: '/admin/users', label: 'Users', end: false },
   { to: '/admin/orders', label: 'Orders', end: false },
+  { to: '/admin/returns', label: 'Returns', end: false },
   { to: '/admin/coupons', label: 'Coupons', end: false },
 ];
 

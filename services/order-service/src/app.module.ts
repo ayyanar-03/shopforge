@@ -9,6 +9,7 @@ import { HealthController } from './health/health.controller';
 import { MetricsModule } from './metrics/metrics.module';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
+import { ReturnRequest } from './returns/entities/return-request.entity';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { OrderItem } from './orders/entities/order-item.entity';
             database: process.env.DB_NAME || 'shopforge',
           }),
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-      entities: [Order, OrderItem],
+      entities: [Order, OrderItem, ReturnRequest],
       synchronize: false,
       migrations: [__dirname + '/migrations/*.js'],
       migrationsRun: true,

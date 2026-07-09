@@ -208,9 +208,11 @@ const RETURN_REASONS = [
   'Other',
 ];
 
-function ReturnRequestModal({ onClose }: { onClose: () => void }) {
+function ReturnRequestModal({ orderId, onClose }: { orderId: number; onClose: () => void }) {
   const [reason, setReason] = useState(RETURN_REASONS[0]);
   const [details, setDetails] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   if (submitted) {
@@ -249,7 +251,16 @@ function ReturnRequestModal({ onClose }: { onClose: () => void }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            setSubmitted(true);
+            setSubmitting(true);
+            setError('');
+            orderService
+              .requestReturn(orderId, reason, details || undefined)
+              .then(() => setSubmitted(true))
+              .catch((err: unknown) => {
+                const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                setError(msg ?? 'Failed to submit return request.');
+              })
+              .finally(() => setSubmitting(false));
           }}
           className="space-y-4"
         >
@@ -275,11 +286,13 @@ function ReturnRequestModal({ onClose }: { onClose: () => void }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
             />
           </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors"
+            disabled={submitting}
+            className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Submit Return Request
+            {submitting ? 'Submitting…' : 'Submit Return Request'}
           </button>
         </form>
       </div>
@@ -358,7 +371,9 @@ export default function OrdersPage() {
   return (
     <div className="bg-gray-100 min-h-screen">
       {showReturnPolicy && <ReturnPolicyModal onClose={() => setShowReturnPolicy(false)} />}
-      {returnOrderId !== null && <ReturnRequestModal onClose={() => setReturnOrderId(null)} />}
+      {returnOrderId !== null && (
+        <ReturnRequestModal orderId={returnOrderId} onClose={() => setReturnOrderId(null)} />
+      )}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">

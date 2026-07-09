@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
+import { ReturnRequest } from './returns/entities/return-request.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -15,7 +16,7 @@ export const AppDataSource = new DataSource({
         database: process.env.DB_NAME ?? 'shopforge',
       }),
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  entities: [Order, OrderItem],
+  entities: [Order, OrderItem, ReturnRequest],
   migrations: ['dist/migrations/*.js'],
   synchronize: false,
 });

@@ -4,13 +4,18 @@ import {
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ORDERS_SERVICE, type IOrdersService } from './orders.service.interface';
+import { RETURNS_SERVICE, type IReturnsService } from '../returns/returns.service.interface';
+import { CreateReturnRequestDto } from '../returns/dto/create-return-request.dto';
 
 interface Req { user: { id: number; email: string; role: string } }
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(@Inject(ORDERS_SERVICE) private readonly ordersService: IOrdersService) {}
+  constructor(
+    @Inject(ORDERS_SERVICE) private readonly ordersService: IOrdersService,
+    @Inject(RETURNS_SERVICE) private readonly returnsService: IReturnsService,
+  ) {}
 
   @Post()
   placeOrder(@Request() req: Req, @Body() dto: PlaceOrderDto) {
@@ -34,5 +39,14 @@ export class OrdersController {
   @Patch(':id/cancel')
   cancelOrder(@Request() req: Req, @Param('id', ParseIntPipe) id: number) {
     return this.ordersService.cancelOrder(req.user.id, id);
+  }
+
+  @Post(':id/return')
+  requestReturn(
+    @Request() req: Req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateReturnRequestDto,
+  ) {
+    return this.returnsService.createReturnRequest(req.user.id, id, dto);
   }
 }

@@ -31,3 +31,22 @@ export interface PagedOrders {
   page: number;
   totalPages: number;
 }
+
+export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ReturnRequest {
+  id: number;
+  orderId: number;
+  userId: number;
+  reason: string;
+  details: string | null;
+  status: ReturnRequestStatus;
+  createdAt: string;
+}
+
+export interface PagedReturnRequests {
+  data: ReturnRequest[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
